@@ -119,10 +119,9 @@ class DetailScreen extends StatelessWidget {
   final AnimeDetailData anime;
 
   DetailScreen({
-    Key? key,
+    super.key,
     AnimeDetailData? data,
-  })  : anime = data ?? animeDetail,
-        super(key: key);
+  })  : anime = data ?? animeDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +155,9 @@ class _BannerSection extends StatelessWidget {
   final AnimeDetailData anime;
 
   const _BannerSection({
-    Key? key,
+    super.key,
     required this.anime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -252,9 +251,9 @@ class _AnimeInfoSection extends StatelessWidget {
   final AnimeDetailData anime;
 
   const _AnimeInfoSection({
-    Key? key,
+    super.key,
     required this.anime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -343,9 +342,9 @@ class _SynopsisSection extends StatelessWidget {
   final String synopsis;
 
   const _SynopsisSection({
-    Key? key,
+    super.key,
     required this.synopsis,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -377,9 +376,9 @@ class _EpisodesSection extends StatelessWidget {
   final List<EpisodeData> episodes;
 
   const _EpisodesSection({
-    Key? key,
+    super.key,
     required this.episodes,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -412,9 +411,9 @@ class SectionTitle extends StatelessWidget {
   final String title;
 
   const SectionTitle({
-    Key? key,
+    super.key,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -434,9 +433,9 @@ class EpisodeItem extends StatelessWidget {
   final EpisodeData episode;
 
   const EpisodeItem({
-    Key? key,
+    super.key,
     required this.episode,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

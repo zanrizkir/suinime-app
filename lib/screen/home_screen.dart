@@ -94,7 +94,7 @@ final List<AnimeData> recommendedAnime = [
 ];
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +153,7 @@ class HomeScreen extends StatelessWidget {
 
 /// Featured banner section with gradient overlay and featured anime
 class _FeaturedBanner extends StatelessWidget {
-  const _FeaturedBanner({Key? key}) : super(key: key);
+  const _FeaturedBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -249,10 +249,10 @@ class AnimeSection extends StatelessWidget {
   final List<AnimeData> animeList;
 
   const AnimeSection({
-    Key? key,
+    super.key,
     required this.title,
     required this.animeList,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -297,9 +297,9 @@ class AnimeCard extends StatelessWidget {
   final AnimeData anime;
 
   const AnimeCard({
-    Key? key,
+    super.key,
     required this.anime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
