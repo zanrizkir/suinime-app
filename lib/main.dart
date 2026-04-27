@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'screen/home_screen.dart';
 import 'screen/detail_screen.dart';
 import 'screen/player_screen.dart';
+import 'services/api_service.dart';
 
 void main() {
   runApp(const SuinimeApp());
+  ApiService().fetchTopAnime();
+  
 }
 
 class SuinimeApp extends StatelessWidget {
