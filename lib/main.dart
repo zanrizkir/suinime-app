@@ -7,7 +7,6 @@ import 'services/api_service.dart';
 void main() {
   runApp(const SuinimeApp());
   ApiService().fetchTopAnime();
-  
 }
 
 class SuinimeApp extends StatelessWidget {
@@ -25,7 +24,9 @@ class SuinimeApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
       routes: {
-        '/detail': (context) => DetailScreen(),
+        '/detail': (context) => DetailScreen(
+          malId: ModalRoute.of(context)?.settings.arguments as int,
+        ),
         '/player': (context) => const PlayerScreen(),
       },
     );
