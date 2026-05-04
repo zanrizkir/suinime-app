@@ -1,383 +1,212 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import '../models/anime_model.dart';
+import 'detail_screen.dart';
+import 'search_screen.dart';
 
-// Constants
-const double _horizontalPadding = 16.0;
-const double _verticalPadding = 8.0;
-const double _borderRadius = 12.0;
-const double _cardAspectRatio = 2 / 3;
-const double _cardHeight = 220.0;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-// Colors
-const Color _darkBackground = Color(0xFF0F0F0F);
-const Color _darkSurface = Color(0xFF1A1A1A);
-const Color _accentColor = Color(0xFFFF6B6B);
-
-// Dummy data model
-class AnimeData {
-  final String title;
-  final String imageUrl;
-
-  AnimeData({
-    required this.title,
-    required this.imageUrl,
-  });
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Dummy anime lists
-final List<AnimeData> trendingAnime = [
-  AnimeData(
-    title: 'Jujutsu Kaisen',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Jujutsu+Kaisen',
-  ),
-  AnimeData(
-    title: 'Attack on Titan',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Attack+on+Titan',
-  ),
-  AnimeData(
-    title: 'Demon Slayer',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Demon+Slayer',
-  ),
-  AnimeData(
-    title: 'Chainsaw Man',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Chainsaw+Man',
-  ),
-  AnimeData(
-    title: 'My Hero Academia',
-    imageUrl: 'https://via.placeholder.com/300x450?text=MHA',
-  ),
-];
-
-final List<AnimeData> latestAnime = [
-  AnimeData(
-    title: 'Wind Breaker',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Wind+Breaker',
-  ),
-  AnimeData(
-    title: 'Solo Leveling',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Solo+Leveling',
-  ),
-  AnimeData(
-    title: 'Frieren',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Frieren',
-  ),
-  AnimeData(
-    title: 'Blue Exorcist',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Blue+Exorcist',
-  ),
-  AnimeData(
-    title: 'Haikyu!!',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Haikyu',
-  ),
-];
-
-final List<AnimeData> recommendedAnime = [
-  AnimeData(
-    title: 'Death Note',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Death+Note',
-  ),
-  AnimeData(
-    title: 'Steins;Gate',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Steins+Gate',
-  ),
-  AnimeData(
-    title: 'Code Geass',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Code+Geass',
-  ),
-  AnimeData(
-    title: 'Cowboy Bebop',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Cowboy+Bebop',
-  ),
-  AnimeData(
-    title: 'Neon Genesis',
-    imageUrl: 'https://via.placeholder.com/300x450?text=Evangelion',
-  ),
-];
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class _HomeScreenState extends State<HomeScreen> {
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _darkBackground,
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: _verticalPadding),
-            const _FeaturedBanner(),
-            SizedBox(height: 24),
-            AnimeSection(
-              title: 'Trending Now',
-              animeList: trendingAnime,
-            ),
-            SizedBox(height: 24),
-            AnimeSection(
-              title: 'Latest Update',
-              animeList: latestAnime,
-            ),
-            SizedBox(height: 24),
-            AnimeSection(
-              title: 'Recommended',
-              animeList: recommendedAnime,
-            ),
-            SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: _darkSurface,
-      elevation: 0,
-      title: const Text(
-        'Suinime',
-        style: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search, color: Colors.white),
-          onPressed: () {},
-        ),
-      ],
-    );
-  }
-}
-
-/// Featured banner section with gradient overlay and featured anime
-class _FeaturedBanner extends StatelessWidget {
-  const _FeaturedBanner({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_borderRadius),
-        child: Container(
-          height: 200,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _accentColor.withOpacity(0.8),
-                _accentColor.withOpacity(0.4),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Background image
-              Positioned.fill(
-                child: Image.network(
-                  'https://via.placeholder.com/600x200?text=Featured+Anime',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            _accentColor.withOpacity(0.6),
-                            Colors.purple.withOpacity(0.4),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              // Dark gradient overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.6),
-                    ],
-                  ),
-                ),
-              ),
-              // Text content
-              const Positioned(
-                bottom: 16,
-                left: 16,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Featured',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Jujutsu Kaisen Season 2',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      backgroundColor: const Color(0xFF0F0F0F),
+      appBar: AppBar(
+        title: const Text(
+          'Top Anime',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Reusable section widget for displaying anime lists
-class AnimeSection extends StatelessWidget {
-  final String title;
-  final List<AnimeData> animeList;
-
-  const AnimeSection({
-    super.key,
-    required this.title,
-    required this.animeList,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section title
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        SizedBox(height: 12),
-        // Horizontal scrollable list
-        SizedBox(
-          height: _cardHeight,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-            itemCount: animeList.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: AnimeCard(anime: animeList[index]),
+        backgroundColor: const Color(0xFF1A1A1A),
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
               );
             },
           ),
-        ),
-      ],
+        ],
+      ),
+      body: FutureBuilder<List<AnimeModel>>(
+        future: _apiService.fetchTopAnime(),
+        builder: (context, snapshot) {
+          // Loading state
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.orange,
+              ),
+            );
+          }
+          
+          // Error state
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 60,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          // Success state
+          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+            final animeList = snapshot.data!;
+            return GridView.builder(
+              padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.65,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: animeList.length,
+              itemBuilder: (context, index) {
+                final anime = animeList[index];
+                return _buildAnimeCard(anime);
+              },
+            );
+          }
+          
+          // Empty state
+          return const Center(
+            child: Text(
+              'Tidak ada data anime',
+              style: TextStyle(color: Colors.white54),
+            ),
+          );
+        },
+      ),
     );
   }
-}
 
-/// Individual anime card with image and title
-class AnimeCard extends StatelessWidget {
-  final AnimeData anime;
-
-  const AnimeCard({
-    super.key,
-    required this.anime,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Poster image with rounded corners
-        ClipRRect(
-          borderRadius: BorderRadius.circular(_borderRadius),
-          child: Container(
-            width: _cardHeight * _cardAspectRatio,
-            height: _cardHeight,
-            decoration: BoxDecoration(
-              color: _darkSurface,
-              borderRadius: BorderRadius.circular(_borderRadius),
+  Widget _buildAnimeCard(AnimeModel anime) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailScreen(malId: anime.malId),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Gambar
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.network(
+                anime.imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 180,
+                    color: Colors.grey[900],
+                    child: const Center(
+                      child: Icon(Icons.broken_image, color: Colors.white54),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 180,
+                    color: Colors.grey[900],
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Colors.orange),
+                    ),
+                  );
+                },
+              ),
             ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Network image
-                Image.network(
-                  anime.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.grey[800]!,
-                            Colors.grey[900]!,
-                          ],
-                        ),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                // Gradient overlay for text readability
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
-                      ],
+            // Konten
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    anime.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  if (anime.score != null)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Colors.orange,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${anime.score!.toStringAsFixed(1)}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
-        SizedBox(height: 8),
-        // Anime title (max 2 lines with ellipsis)
-        SizedBox(
-          width: _cardHeight * _cardAspectRatio,
-          child: Text(
-            anime.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
