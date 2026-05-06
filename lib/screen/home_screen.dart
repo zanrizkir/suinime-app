@@ -25,11 +25,37 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedDay = 'Senin';
   Map<String, dynamic>? selectedGenre;
 
-  final List<String> _filters = [
-    'Home',
-    'Jadwal Rilis',
-    'On-going Anime',
-    'Genre List',
+  final List<_BottomNavItem> _bottomNavItems = const [
+    _BottomNavItem(
+      label: 'Home',
+      filter: 'Home',
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+    ),
+    _BottomNavItem(
+      label: 'Jadwal',
+      filter: 'Jadwal Rilis',
+      icon: Icons.calendar_month_outlined,
+      activeIcon: Icons.calendar_month_rounded,
+    ),
+    _BottomNavItem(
+      label: 'Pustaka',
+      filter: 'Genre List',
+      icon: Icons.video_library_outlined,
+      activeIcon: Icons.video_library_rounded,
+    ),
+    _BottomNavItem(
+      label: 'Riwayat',
+      filter: 'Riwayat',
+      icon: Icons.history_outlined,
+      activeIcon: Icons.history_rounded,
+    ),
+    _BottomNavItem(
+      label: 'Lainnya',
+      filter: 'Lainnya',
+      icon: Icons.menu_rounded,
+      activeIcon: Icons.more_horiz_rounded,
+    ),
   ];
 
   final List<Map<String, String>> _days = [
@@ -99,6 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (selectedFilter == 'On-going Anime') {
         url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
       } else if (selectedFilter == 'Genre List') {
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
         setState(() {
           isLoading = false;
         });
@@ -257,46 +288,98 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildFilterNavigation(),
-          Expanded(child: _buildBody()),
-        ],
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    final activeIndex = _activeBottomNavIndex;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.darkSurface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.dark.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: List.generate(_bottomNavItems.length, (index) {
+            final item = _bottomNavItems[index];
+            final isSelected = activeIndex == index;
+
+            return Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () => _changeFilter(item.filter),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.14)
+                        : AppColors.dark.withValues(alpha: 0),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSelected ? item.activeIcon : item.icon,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.lightGrey,
+                        size: 22,
+                      ),
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.lightGrey,
+                            fontSize: 11,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
 
-  Widget _buildFilterNavigation() {
-    return Container(
-      height: 48,
-      color: AppColors.darkSurface,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        itemCount: _filters.length,
-        itemBuilder: (context, index) {
-          final filter = _filters[index];
-          final isSelected = selectedFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(filter),
-              selected: isSelected,
-              onSelected: (_) => _changeFilter(filter),
-              backgroundColor: AppColors.divider,
-              selectedColor: AppColors.primary,
-              labelStyle: TextStyle(
-                color: isSelected ? AppColors.dark : AppColors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-              ),
-              side: BorderSide.none,
-              showCheckmark: false,
-            ),
-          );
-        },
-      ),
+  int get _activeBottomNavIndex {
+    if (selectedFilter == 'On-going Anime' ||
+        selectedFilter == 'Completed Anime') {
+      return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
+    }
+
+    final index = _bottomNavItems.indexWhere(
+      (item) => item.filter == selectedFilter,
     );
+    return index == -1 ? 0 : index;
   }
 
   Widget _buildBody() {
@@ -311,6 +394,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return _buildCompletedBody();
       case 'Genre List':
         return _buildGenreBody();
+      case 'Riwayat':
+        return _buildHistoryBody();
+      case 'Lainnya':
+        return _buildMoreBody();
       default:
         return const SizedBox.shrink();
     }
@@ -367,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Image.network(
                               anime.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 color: AppColors.darkSurface,
                                 child: const Icon(
                                   Icons.broken_image,
@@ -524,6 +611,107 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCompletedBody() {
     return _buildScrollableGridSection(animeList, isLoading);
+  }
+
+  //==== RIWAYAT =====
+
+  Widget _buildHistoryBody() {
+    if (watchHistory.isEmpty) {
+      return const Center(
+        child: Text(
+          'Belum ada riwayat tontonan',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: watchHistory.length,
+      itemBuilder: (context, index) {
+        final item = watchHistory[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.darkSurface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            item['title']?.toString() ?? 'Untitled',
+            style: AppTextStyles.labelLarge,
+          ),
+        );
+      },
+    );
+  }
+
+  //==== LAINNYA =====
+
+  Widget _buildMoreBody() {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        _buildMoreMenuTile(
+          icon: Icons.play_circle_outline_rounded,
+          title: 'On-going Anime',
+          subtitle: 'Anime yang sedang tayang',
+          onTap: () => _changeFilter('On-going Anime'),
+        ),
+        const SizedBox(height: 10),
+        _buildMoreMenuTile(
+          icon: Icons.check_circle_outline_rounded,
+          title: 'Completed Anime',
+          subtitle: 'Daftar anime yang sudah selesai',
+          onTap: () => _changeFilter('Completed Anime'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoreMenuTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.darkSurface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTextStyles.labelLarge),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.lightGrey),
+          ],
+        ),
+      ),
+    );
   }
 
   //==== GENRE LIST =====
@@ -700,7 +888,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   anime.imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: AppColors.darkSurface,
                     child: const Center(
                       child: Icon(
@@ -810,4 +998,18 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+class _BottomNavItem {
+  final String label;
+  final String filter;
+  final IconData icon;
+  final IconData activeIcon;
+
+  const _BottomNavItem({
+    required this.label,
+    required this.filter,
+    required this.icon,
+    required this.activeIcon,
+  });
 }
