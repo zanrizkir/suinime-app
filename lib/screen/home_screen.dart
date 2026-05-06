@@ -270,26 +270,74 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkBg,
-      appBar: AppBar(
-        title: const Text(
-          'Suinime',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.white),
-        ),
-        backgroundColor: AppColors.darkSurface,
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.white),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchScreen()),
-            ),
-          ),
-        ],
-      ),
+      appBar: _buildHomeAppBar(),
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  PreferredSizeWidget _buildHomeAppBar() {
+    return AppBar(
+      toolbarHeight: 72,
+      backgroundColor: AppColors.darkBg,
+      elevation: 0,
+      centerTitle: false,
+      titleSpacing: 16,
+      title: Row(
+        children: [
+          const Text(
+            'Suinime',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.white,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: _buildSearchEntry()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchEntry() {
+    return Material(
+      color: AppColors.darkSurface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SearchScreen()),
+        ),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.45),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.search_rounded, color: AppColors.lightGrey, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Cari anime...',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
