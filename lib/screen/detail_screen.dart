@@ -1,258 +1,756 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../models/anime_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class DetailScreen extends StatefulWidget {
   final int malId;
+  final Map<String, dynamic>? animeInfo;
 
-  const DetailScreen({super.key, required this.malId});
+  const DetailScreen({
+    super.key,
+    required this.malId,
+    this.animeInfo,
+  });
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  final ApiService _apiService = ApiService();
+  final String baseUrl = 'https://api.jikan.moe/v4';
+
+  // Detail state
+  bool isDetailLoading = false;
+  Map<String, dynamic> detailData = {};
+
+  // Episode state
+  List<Map<String, dynamic>> episodes = [];
+  bool isEpisodeLoading = false;
+  String? episodeError;
+  int episodePage = 1;
+  bool hasMoreEpisodes = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+    _loadEpisodes();
+  }
+
+  //==== API CALLS =====
+
+  Future<void> _loadDetail() async {
+    // Jika animeInfo sudah lengkap (synopsis tersedia), skip fetch detail
+    final existingSynopsis = widget.animeInfo?['synopsis']?.toString() ?? '';
+    if (existingSynopsis.isNotEmpty) {
+      setState(() {
+        detailData = widget.animeInfo ?? {};
+      });
+      return;
+    }
+
+    setState(() {
+      isDetailLoading = true;
+    });
+
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/anime/${widget.malId}'))
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final data = json['data'] as Map<String, dynamic>;
+
+        if (mounted) {
+          setState(() {
+            detailData = {
+              'title': data['title'] ?? widget.animeInfo?['title'] ?? '',
+              'imageUrl': data['images']?['jpg']?['large_image_url'] ??
+                  widget.animeInfo?['imageUrl'] ?? '',
+              'backdropUrl': data['trailer']?['images']?['maximum_image_url'] ??
+                  data['images']?['jpg']?['large_image_url'] ??
+                  widget.animeInfo?['imageUrl'] ?? '',
+              'score': data['score'],
+              'synopsis': data['synopsis'] ?? '',
+              'status': data['status'] ?? '',
+              'releaseDate': data['aired']?['string'] ?? '',
+              'genres': (data['genres'] as List<dynamic>? ?? [])
+                  .map((g) => g['name']?.toString() ?? '')
+                  .where((g) => g.isNotEmpty)
+                  .toList(),
+              'episodes': data['episodes'],
+              'duration': data['duration'] ?? '',
+              'rating': data['rating'] ?? '',
+              'studios': (data['studios'] as List<dynamic>? ?? [])
+                  .map((s) => s['name']?.toString() ?? '')
+                  .where((s) => s.isNotEmpty)
+                  .toList(),
+              'source': data['source'] ?? '',
+              'type': data['type'] ?? '',
+            };
+            isDetailLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            detailData = widget.animeInfo ?? {};
+            isDetailLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          detailData = widget.animeInfo ?? {};
+          isDetailLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadEpisodes() async {
+    setState(() {
+      isEpisodeLoading = true;
+      episodeError = null;
+    });
+
+    try {
+      final result = await fetchEpisodes(widget.malId, page: episodePage);
+      if (mounted) {
+        setState(() {
+          episodes = result['episodes'] as List<Map<String, dynamic>>;
+          hasMoreEpisodes = result['hasMore'] as bool;
+          isEpisodeLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          episodeError = e.toString();
+          isEpisodeLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchEpisodes(int malId,
+      {int page = 1}) async {
+    final response = await http
+        .get(Uri.parse('$baseUrl/anime/$malId/episodes?page=$page'))
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final List<dynamic> data = json['data'] ?? [];
+      final pagination = json['pagination'];
+      final bool hasMore = pagination?['has_next_page'] ?? false;
+
+      return {
+        'episodes': data.map<Map<String, dynamic>>((ep) {
+          return {
+            'number': ep['mal_id'] ?? 0,
+            'title': ep['title'] ?? '',
+            'aired': ep['aired'] ?? '',
+            'filler': ep['filler'] ?? false,
+            'recap': ep['recap'] ?? false,
+          };
+        }).toList(),
+        'hasMore': hasMore,
+      };
+    } else {
+      throw Exception('Failed to load episodes (${response.statusCode})');
+    }
+  }
+
+  void _loadMoreEpisodes() {
+    setState(() {
+      episodePage++;
+    });
+    _loadMoreEpisodesAppend();
+  }
+
+  Future<void> _loadMoreEpisodesAppend() async {
+    try {
+      final result = await fetchEpisodes(widget.malId, page: episodePage);
+      if (mounted) {
+        setState(() {
+          episodes.addAll(
+              result['episodes'] as List<Map<String, dynamic>>);
+          hasMoreEpisodes = result['hasMore'] as bool;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          episodePage--;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load more episodes: $e')),
+        );
+      }
+    }
+  }
+
+  //==== BUILD =====
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isTabletOrDesktop = screenWidth >= 600;
-    final expandedHeight = isTabletOrDesktop ? 400.0 : 300.0;
+    final info = detailData.isNotEmpty
+        ? detailData
+        : (widget.animeInfo ?? {});
+
+    final String title =
+        info['title']?.toString() ?? 'Unknown Title';
+    final String imageUrl = info['imageUrl']?.toString() ?? '';
+    final String backdropUrl =
+        info['backdropUrl']?.toString() ?? imageUrl;
+    final double? score = info['score'] != null
+        ? double.tryParse(info['score'].toString())
+        : null;
+    final String synopsis =
+        info['synopsis']?.toString() ?? 'No synopsis available.';
+    final String status = info['status']?.toString() ?? '-';
+    final String releaseDate =
+        info['releaseDate']?.toString() ?? '-';
+    final List<String> genres = info['genres'] is List
+        ? List<String>.from(
+            (info['genres'] as List).map((g) => g.toString()))
+        : [];
+    final String duration = info['duration']?.toString() ?? '-';
+    final String rating = info['rating']?.toString() ?? '-';
+    final String source = info['source']?.toString() ?? '-';
+    final String type = info['type']?.toString() ?? '-';
+    final List<String> studios = info['studios'] is List
+        ? List<String>.from(
+            (info['studios'] as List).map((s) => s.toString()))
+        : [];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
-      body: FutureBuilder<AnimeDetailModel>(
-        future: _apiService.fetchAnimeDetail(widget.malId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.orange),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => setState(() {}),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+      body: SafeArea(
+        top: false,
+        child: isDetailLoading && detailData.isEmpty
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.orange))
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      context,
+                      title: title,
+                      imageUrl: imageUrl,
+                      backdropUrl: backdropUrl,
+                      score: score,
+                      status: status,
                     ),
-                    child: const Text('Coba Lagi'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (snapshot.hasData) {
-            final anime = snapshot.data!;
-            
-            return CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: expandedHeight,
-                  pinned: true,
-                  backgroundColor: const Color(0xFF1A1A1A),
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          anime.imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[900],
-                              child: const Center(
-                                child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
-                              ),
-                            );
-                          },
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                const Color(0xFF0F0F0F).withOpacity(0.8),
-                                const Color(0xFF0F0F0F),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    _buildDescriptionSection(synopsis),
+                    if (genres.isNotEmpty) _buildGenresSection(genres),
+                    _buildInfoSection(
+                      status: status,
+                      releaseDate: releaseDate,
+                      duration: duration,
+                      rating: rating,
+                      source: source,
+                      type: type,
+                      studios: studios,
                     ),
-                  ),
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                    _buildEpisodeSection(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                SliverPadding(
-                  padding: EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    bottom: 32,
-                    top: 16,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // Judul
-                      Text(
-                        anime.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+              ),
+      ),
+    );
+  }
+
+  // ===== HEADER =====
+
+  Widget _buildHeader(
+    BuildContext context, {
+    required String title,
+    required String imageUrl,
+    required String backdropUrl,
+    required double? score,
+    required String status,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final backdropHeight = screenWidth * 9 / 16;
+        final posterHeight = backdropHeight * 0.75;
+        final posterWidth = posterHeight * 0.65;
+        final overlapOffset = backdropHeight - (posterHeight * 0.4);
+
+        return SizedBox(
+          height: backdropHeight + (posterHeight * 0.6),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Backdrop
+              SizedBox(
+                height: backdropHeight,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    backdropUrl.isNotEmpty
+                        ? Image.network(
+                            backdropUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFF1A1A1A),
+                            ),
+                          )
+                        : Container(color: const Color(0xFF1A1A1A)),
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black87],
+                          stops: [0.4, 1.0],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Info (Score, Status, Episodes)
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          if (anime.score != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
+                    ),
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 8,
+                      left: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new,
+                            color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black45,
+                          shape: const CircleBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Poster + Info
+              Positioned(
+                top: overlapOffset,
+                left: 16,
+                right: 16,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Poster
+                    Container(
+                      width: posterWidth,
+                      height: posterHeight,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black54,
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: imageUrl.isNotEmpty
+                            ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: const Color(0xFF2A2A2A),
+                                  child: const Icon(Icons.broken_image,
+                                      color: Colors.white54),
+                                ),
+                              )
+                            : Container(
+                                color: const Color(0xFF2A2A2A),
+                                child: const Icon(Icons.broken_image,
+                                    color: Colors.white54),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Title + Meta
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            if (score != null)
+                              Row(
                                 children: [
-                                  const Icon(Icons.star, color: Colors.orange, size: 16),
+                                  const Icon(Icons.star,
+                                      color: Colors.orange, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${anime.score!.toStringAsFixed(1)}',
-                                    style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                                    score.toStringAsFixed(1),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const Text(
+                                    ' / 10',
+                                    style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12),
                                   ),
                                 ],
                               ),
-                            ),
-                          if (anime.status != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[800],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                anime.status!,
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ),
-                          if (anime.episodes != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[800],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${anime.episodes} Episode',
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Genre Chips
-                      if (anime.genres.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: anime.genres.map((genre) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                              ),
-                              child: Text(
-                                genre,
-                                style: const TextStyle(color: Colors.orange, fontSize: 12),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      const SizedBox(height: 24),
-                      // Tombol Watch Now
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Fitur streaming akan segera hadir'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text(
-                            'WATCH NOW',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                            const SizedBox(height: 6),
+                            _statusBadge(status),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Sinopsis
-                      const Text(
-                        'Sinopsis',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        anime.synopsis ?? 'Sinopsis tidak tersedia',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          height: 1.5,
-                          fontSize: screenWidth < 600 ? 14 : 16,
-                        ),
-                        textAlign: TextAlign.justify,
-                        softWrap: true, // Tambahkan ini
-                      ),
-                      const SizedBox(height: 40), // Tambahkan bottom padding
-                    ]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statusBadge(String status) {
+    if (status.isEmpty || status == '-') return const SizedBox.shrink();
+    final color = status.toLowerCase().contains('airing')
+        ? Colors.green
+        : status.toLowerCase().contains('finished')
+            ? Colors.blue
+            : Colors.orange;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color, width: 1),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  //==== DESCRIPTION =====
+
+  Widget _buildDescriptionSection(String synopsis) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Description'),
+          const SizedBox(height: 8),
+          Text(
+            synopsis,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //==== GENRES =====
+
+  Widget _buildGenresSection(List<String> genres) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Genres'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: genres.map((genre) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: Colors.orange.withOpacity(0.6), width: 1),
+                ),
+                child: Text(
+                  genre,
+                  style: const TextStyle(
+                    color: Colors.orange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            );
-          }
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
 
-          return const SizedBox.shrink();
-        },
+  //==== INFO =====
+
+  Widget _buildInfoSection({
+    required String status,
+    required String releaseDate,
+    required String duration,
+    required String rating,
+    required String source,
+    required String type,
+    required List<String> studios,
+  }) {
+    final List<Map<String, String>> metadata = [
+      {'label': 'Status', 'value': status},
+      {'label': 'Release Date', 'value': releaseDate},
+      {'label': 'Type', 'value': type},
+      {'label': 'Source', 'value': source},
+      {'label': 'Duration', 'value': duration},
+      {'label': 'Rating', 'value': rating},
+      if (studios.isNotEmpty)
+        {'label': 'Studio', 'value': studios.join(', ')},
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitle('Information'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: metadata.map((item) {
+              return SizedBox(
+                width: (MediaQuery.of(context).size.width - 44) / 2,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item['label']}: ',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Flexible(
+                      child: Text(
+                        item['value'] ?? '-',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  //==== EPISODE LIST =====
+
+  Widget _buildEpisodeSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _sectionTitle('Episode List'),
+              if (episodes.isNotEmpty)
+                Text(
+                  '${episodes.length} eps',
+                  style: const TextStyle(
+                      color: Colors.white54, fontSize: 12),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isEpisodeLoading && episodes.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(color: Colors.orange),
+              ),
+            )
+          else if (episodeError != null && episodes.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    episodeError!,
+                    style: const TextStyle(
+                        color: Colors.red, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _loadEpisodes,
+                    child: const Text('Retry',
+                        style: TextStyle(color: Colors.orange)),
+                  ),
+                ],
+              ),
+            )
+          else if (episodes.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'No episodes available.',
+                  style:
+                      TextStyle(color: Colors.white54, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            Column(
+              children: [
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate:
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 72,
+                    mainAxisExtent: 52,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: episodes.length,
+                  itemBuilder: (context, index) {
+                    final ep = episodes[index];
+                    final epNumber =
+                        ep['number']?.toString() ?? '${index + 1}';
+                    final bool isFiller = ep['filler'] == true;
+                    final bool isRecap = ep['recap'] == true;
+
+                    return GestureDetector(
+                      onTap: () {
+                        // TODO: Navigate to video player with episode data
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isFiller
+                              ? Colors.blue.withOpacity(0.15)
+                              : isRecap
+                                  ? Colors.purple.withOpacity(0.15)
+                                  : const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isFiller
+                                ? Colors.blue.withOpacity(0.5)
+                                : isRecap
+                                    ? Colors.purple.withOpacity(0.5)
+                                    : Colors.orange.withOpacity(0.4),
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            epNumber,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Load More
+                if (hasMoreEpisodes) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: isEpisodeLoading
+                          ? null
+                          : _loadMoreEpisodes,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.orange),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: isEpisodeLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.orange,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Load More Episodes',
+                              style: TextStyle(color: Colors.orange),
+                            ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  //==== HELPER =====
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
       ),
     );
   }
