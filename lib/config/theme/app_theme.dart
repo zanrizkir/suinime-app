@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 // ============ COLOR PALETTE ============
 class AppColors {
   // Primary palette (as per requirement)
-  static const Color primary = Color(0xFF0A64B7);
+  static const Color primary = Color(0xFF2A8DF0);
   static const Color warning = Color(0xFFFFCC00);
   static const Color success = Color(0xFF3FFF78);
-  static const Color danger = Color(0xFFFF5656);
+  static const Color danger = Color(0xFFFF0000);
   static const Color secondary = Color(0xFFEDF3FA);
   static const Color white = Color(0xFFFFFFFF);
   static const Color dark = Color(0xFF000000);
@@ -17,7 +17,7 @@ class AppColors {
   // Extended palette (project-specific colors mapped to primary palette)
   static const Color darkBg = Color(0xFF0F0F0F); // Main app background
   static const Color darkSurface = Color(0xFF1A1A1A); // Cards, app bars
-  static const Color accentOrange = Color(0xFFFF6B6B); // Accent color (use instead of Colors.orange)
+  static const Color accent = primary;
 
   // Text color variants
   static const Color textPrimary = white;

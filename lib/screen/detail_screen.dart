@@ -225,7 +225,7 @@ class _DetailScreenState extends State<DetailScreen> {
         top: false,
         child: isDetailLoading && detailData.isEmpty
             ? const Center(
-                child: CircularProgressIndicator(color: AppColors.accentOrange),
+                child: CircularProgressIndicator(color: AppColors.primary),
               )
             : SingleChildScrollView(
                 child: Column(
@@ -303,8 +303,8 @@ class _DetailScreenState extends State<DetailScreen> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.transparent,
-                            AppColors.dark.withOpacity(0.7),
+                            AppColors.dark.withValues(alpha: 0),
+                            AppColors.dark.withValues(alpha: 0.7),
                           ],
                           stops: const [0.4, 1.0],
                         ),
@@ -320,7 +320,9 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                         style: IconButton.styleFrom(
-                          backgroundColor: AppColors.dark.withOpacity(0.3),
+                          backgroundColor: AppColors.dark.withValues(
+                            alpha: 0.3,
+                          ),
                           shape: const CircleBorder(),
                         ),
                       ),
@@ -345,7 +347,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.dark.withOpacity(0.4),
+                            color: AppColors.dark.withValues(alpha: 0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -397,7 +399,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                 children: [
                                   const Icon(
                                     Icons.star,
-                                    color: AppColors.accentOrange,
+                                    color: AppColors.warning,
                                     size: 16,
                                   ),
                                   const SizedBox(width: 4),
@@ -438,13 +440,11 @@ class _DetailScreenState extends State<DetailScreen> {
     if (status.isEmpty || status == '-') return const SizedBox.shrink();
     final color = status.toLowerCase().contains('airing')
         ? AppColors.success
-        : status.toLowerCase().contains('finished')
-        ? AppColors.primary
-        : AppColors.accentOrange;
+        : AppColors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color, width: 1),
       ),
@@ -495,17 +495,17 @@ class _DetailScreenState extends State<DetailScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentOrange.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.accentOrange.withOpacity(0.6),
+                    color: AppColors.primary.withValues(alpha: 0.6),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   genre,
                   style: const TextStyle(
-                    color: AppColors.accentOrange,
+                    color: AppColors.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -599,7 +599,7 @@ class _DetailScreenState extends State<DetailScreen> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(color: AppColors.accentOrange),
+                child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
           else if (episodeError != null && episodes.isEmpty)
@@ -619,7 +619,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     onPressed: _loadEpisodes,
                     child: const Text(
                       'Retry',
-                      style: TextStyle(color: AppColors.accentOrange),
+                      style: TextStyle(color: AppColors.primary),
                     ),
                   ),
                 ],
@@ -664,17 +664,17 @@ class _DetailScreenState extends State<DetailScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isFiller
-                              ? AppColors.primary.withOpacity(0.15)
+                              ? AppColors.primary.withValues(alpha: 0.15)
                               : isRecap
-                              ? AppColors.warning.withOpacity(0.15)
+                              ? AppColors.warning.withValues(alpha: 0.15)
                               : AppColors.darkSurface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isFiller
-                                ? AppColors.primary.withOpacity(0.5)
+                                ? AppColors.primary.withValues(alpha: 0.5)
                                 : isRecap
-                                ? AppColors.warning.withOpacity(0.5)
-                                : AppColors.accentOrange.withOpacity(0.4),
+                                ? AppColors.warning.withValues(alpha: 0.5)
+                                : AppColors.primary.withValues(alpha: 0.4),
                             width: 1,
                           ),
                         ),
@@ -694,7 +694,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     child: OutlinedButton(
                       onPressed: isEpisodeLoading ? null : _loadMoreEpisodes,
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.orange),
+                        side: const BorderSide(color: AppColors.primary),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -705,13 +705,13 @@ class _DetailScreenState extends State<DetailScreen> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                color: Colors.orange,
+                                color: AppColors.primary,
                                 strokeWidth: 2,
                               ),
                             )
                           : const Text(
                               'Load More Episodes',
-                              style: TextStyle(color: Colors.orange),
+                              style: TextStyle(color: AppColors.primary),
                             ),
                     ),
                   ),
@@ -729,7 +729,7 @@ class _DetailScreenState extends State<DetailScreen> {
     return Text(
       title,
       style: const TextStyle(
-        color: Colors.white,
+        color: AppColors.white,
         fontSize: 16,
         fontWeight: FontWeight.bold,
       ),

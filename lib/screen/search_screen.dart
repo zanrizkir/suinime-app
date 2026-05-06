@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
 import '../config/theme/app_theme.dart';
-import 'detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -103,7 +102,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.orange),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
@@ -112,13 +111,18 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 60),
+            const Icon(Icons.error_outline, color: AppColors.error, size: 60),
             const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(color: Colors.white70)),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _performSearch,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -216,7 +220,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
@@ -227,14 +231,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         children: [
                           const Icon(
                             Icons.star,
-                            color: Colors.orange,
+                            color: AppColors.warning,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${anime.score!.toStringAsFixed(1)}',
                             style: const TextStyle(
-                              color: Colors.white70,
+                              color: AppColors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -246,7 +250,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Icon(Icons.chevron_right, color: Colors.white54),
+              child: Icon(Icons.chevron_right, color: AppColors.textTertiary),
             ),
           ],
         ),
@@ -261,7 +265,7 @@ class _SearchScreenState extends State<SearchScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: AppColors.darkSurface,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -280,9 +284,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 180,
-                    color: Colors.grey[900],
+                    color: AppColors.darkSurface,
                     child: const Center(
-                      child: Icon(Icons.broken_image, color: Colors.white54),
+                      child: Icon(
+                        Icons.broken_image,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   );
                 },
@@ -298,7 +305,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -307,12 +314,16 @@ class _SearchScreenState extends State<SearchScreen> {
                   if (anime.score != null)
                     Row(
                       children: [
-                        const Icon(Icons.star, color: Colors.orange, size: 16),
+                        const Icon(
+                          Icons.star,
+                          color: AppColors.warning,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${anime.score!.toStringAsFixed(1)}',
                           style: const TextStyle(
-                            color: Colors.white70,
+                            color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'config/theme/app_theme.dart';
 import 'screen/home_screen.dart';
 import 'screen/detail_screen.dart';
 import 'screen/player_screen.dart';
@@ -19,7 +20,7 @@ class SuinimeApp extends StatelessWidget {
       title: 'Suinime',
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+        scaffoldBackgroundColor: AppColors.darkBg,
         fontFamily: 'Roboto',
       ),
       home: const HomeScreen(),

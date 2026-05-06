@@ -284,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
               selected: isSelected,
               onSelected: (_) => _changeFilter(filter),
               backgroundColor: AppColors.divider,
-              selectedColor: AppColors.accentOrange,
+              selectedColor: AppColors.primary,
               labelStyle: TextStyle(
                 color: isSelected ? AppColors.dark : AppColors.white,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -320,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeBody() {
     if (isLoading && animeList.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accentOrange),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
     if (animeList.isEmpty && !isLoading) {
@@ -381,8 +381,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Colors.transparent,
-                                    AppColors.dark.withOpacity(0.7),
+                                    AppColors.dark.withValues(alpha: 0),
+                                    AppColors.dark.withValues(alpha: 0.7),
                                   ],
                                 ),
                               ),
@@ -405,7 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       children: [
                                         const Icon(
                                           Icons.star,
-                                          color: AppColors.accentOrange,
+                                          color: AppColors.warning,
                                           size: 14,
                                         ),
                                         const SizedBox(width: 4),
@@ -432,14 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (watchHistory.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: Text(
-                'Tontonan Terakhir',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text('Tontonan Terakhir', style: AppTextStyles.heading4),
             ),
             SizedBox(
               height: 130,
@@ -451,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 100,
                   margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[800],
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -462,14 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Top Anime Grid (no pagination on Home)
           const Padding(
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-            child: Text(
-              'Top Anime',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text('Top Anime', style: AppTextStyles.heading4),
           ),
           _buildAnimeGrid(animeList),
           const SizedBox(height: 20),
@@ -505,9 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accentOrange
-                          : AppColors.divider,
+                      color: isSelected ? AppColors.primary : AppColors.divider,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
@@ -554,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(
               padding: EdgeInsets.all(24),
               child: Center(
-                child: CircularProgressIndicator(color: AppColors.accentOrange),
+                child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
           else
@@ -575,13 +559,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.accentOrange
+                            ? AppColors.primary
                             : AppColors.darkSurface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
-                              ? AppColors.accentOrange
-                              : AppColors.border.withOpacity(0.5),
+                              ? AppColors.primary
+                              : AppColors.border.withValues(alpha: 0.5),
                           width: 1,
                         ),
                       ),
@@ -610,7 +594,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 selectedGenre!['name'],
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -620,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Padding(
                 padding: EdgeInsets.all(40),
                 child: Center(
-                  child: CircularProgressIndicator(color: Colors.orange),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               )
             else if (genreAnimeList.isEmpty)
@@ -629,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(
                   child: Text(
                     'No anime found',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: AppColors.textTertiary),
                   ),
                 ),
               )
@@ -649,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildScrollableGridSection(List<AnimeModel> list, bool loading) {
     if (loading && list.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accentOrange),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
     if (list.isEmpty && !loading) {
@@ -731,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppColors.darkSurface,
                       child: const Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.accentOrange,
+                          color: AppColors.warning,
                         ),
                       ),
                     );
@@ -759,7 +743,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           const Icon(
                             Icons.star,
-                            color: AppColors.accentOrange,
+                            color: AppColors.warning,
                             size: 12,
                           ),
                           const SizedBox(width: 3),
@@ -788,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: currentPage == 1 ? null : _prevPage,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentOrange,
+              backgroundColor: AppColors.primary,
               disabledBackgroundColor: AppColors.darkSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -806,7 +790,7 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: AppColors.darkSurface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.accentOrange, width: 1),
+              border: Border.all(color: AppColors.primary, width: 1),
             ),
             child: Text('Page $currentPage', style: AppTextStyles.labelLarge),
           ),
@@ -814,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: _nextPage,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentOrange,
+              backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

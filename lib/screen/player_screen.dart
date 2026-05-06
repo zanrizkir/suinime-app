@@ -11,7 +11,7 @@ const Duration _controlsAutoHideDuration = Duration(seconds: 5);
 // Colors
 const Color _darkBackground = AppColors.darkBg;
 const Color _darkSurface = AppColors.darkSurface;
-const Color _accentColor = AppColors.accentOrange;
+const Color _accentColor = AppColors.primary;
 const Color _textSecondary = AppColors.textSecondary;
 
 // Dummy data models
@@ -147,7 +147,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return GestureDetector(
       onTap: _toggleControlsVisibility,
       child: Container(
-        color: Colors.black,
+        color: AppColors.dark,
         width: double.infinity,
         child: _videoController.value.isInitialized
             ? Stack(
@@ -190,7 +190,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           Text(
             'Episode ${currentEpisode.episodeNumber} - ${currentEpisode.title}',
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -214,7 +214,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           const Text(
             'More Episodes',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -284,9 +284,9 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.4),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.6),
+                  AppColors.dark.withValues(alpha: 0.4),
+                  AppColors.dark.withValues(alpha: 0),
+                  AppColors.dark.withValues(alpha: 0.6),
                 ],
               ),
             ),
@@ -298,12 +298,12 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                color: _accentColor.withOpacity(0.9),
+                color: _accentColor.withValues(alpha: 0.9),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 widget.isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 40,
               ),
             ),
@@ -321,12 +321,12 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: AppColors.dark.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.arrow_back,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 24,
                     ),
                   ),
@@ -338,12 +338,12 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: AppColors.dark.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.fullscreen,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 24,
                     ),
                   ),
@@ -368,8 +368,8 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
                     allowScrubbing: true,
                     colors: VideoProgressColors(
                       playedColor: _accentColor,
-                      bufferedColor: Colors.grey[700]!,
-                      backgroundColor: Colors.grey[900]!,
+                      bufferedColor: AppColors.border,
+                      backgroundColor: AppColors.darkSurface,
                     ),
                   ),
                   SizedBox(height: 8),
@@ -380,14 +380,14 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
                       Text(
                         _formatDuration(widget.videoController.value.position),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white,
                           fontSize: 12,
                         ),
                       ),
                       Text(
                         _formatDuration(widget.videoController.value.duration),
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: AppColors.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -436,11 +436,11 @@ class EpisodeSelectorItem extends StatelessWidget {
         width: 120,
         decoration: BoxDecoration(
           color: isCurrentEpisode
-              ? _accentColor.withOpacity(0.3)
+              ? _accentColor.withValues(alpha: 0.3)
               : _darkSurface,
           borderRadius: BorderRadius.circular(_borderRadius),
           border: Border.all(
-            color: isCurrentEpisode ? _accentColor : Colors.grey[800]!,
+            color: isCurrentEpisode ? _accentColor : AppColors.border,
             width: isCurrentEpisode ? 2 : 0.5,
           ),
         ),
@@ -452,7 +452,7 @@ class EpisodeSelectorItem extends StatelessWidget {
             Text(
               'EP ${episode.episodeNumber}',
               style: TextStyle(
-                color: isCurrentEpisode ? _accentColor : Colors.white,
+                color: isCurrentEpisode ? _accentColor : AppColors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -468,7 +468,10 @@ class EpisodeSelectorItem extends StatelessWidget {
             SizedBox(height: 6),
             Text(
               episode.duration,
-              style: const TextStyle(color: Colors.white70, fontSize: 9),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 9,
+              ),
             ),
           ],
         ),

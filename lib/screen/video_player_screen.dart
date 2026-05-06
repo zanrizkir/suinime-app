@@ -89,18 +89,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     children: [
                       const Icon(
                         Icons.error_outline,
-                        color: Colors.red,
+                        color: AppColors.error,
                         size: 48,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Gagal memuat video',
-                        style: const TextStyle(color: Colors.white70),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                       Text(
                         errorMessage,
                         style: const TextStyle(
-                          color: Colors.white54,
+                          color: AppColors.textTertiary,
                           fontSize: 12,
                         ),
                         textAlign: TextAlign.center,
@@ -196,7 +196,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
             SizedBox(height: 16),
             Text(
@@ -216,7 +216,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 64),
+              const Icon(Icons.error_outline, color: AppColors.error, size: 64),
               const SizedBox(height: 16),
               Text(
                 'Gagal Memuat Video',
@@ -229,7 +229,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               const SizedBox(height: 8),
               Text(
                 _errorMessage,
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -238,7 +238,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba Lagi'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentOrange,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.dark,
                 ),
               ),
