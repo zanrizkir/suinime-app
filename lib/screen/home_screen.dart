@@ -17,8 +17,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedFilter = 'Home';
   int currentPage = 1;
   bool isLoading = false;
+  bool isLatestLoading = false;
   bool isGenreAnimeLoading = false;
   List<AnimeModel> animeList = [];
+  List<AnimeModel> latestAnimeList = [];
   List<AnimeModel> genreAnimeList = [];
   List<Map<String, dynamic>> watchHistory = [];
   List<Map<String, dynamic>> genres = [];
@@ -74,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchData();
+    _fetchLatestAnime();
     _loadWatchHistory();
     _fetchGenres();
   }
@@ -106,6 +109,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _fetchLatestAnime() async {
+    setState(() {
+      isLatestLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/top/anime?filter=airing&page=1'),
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> dataList = jsonData['data'] ?? [];
+        final List<AnimeModel> fetched = dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
+        if (mounted) {
+          setState(() {
+            latestAnimeList = fetched;
+            isLatestLoading = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load latest anime');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLatestLoading = false;
+        });
+        debugPrint('Error fetching latest anime: $e');
+      }
+    }
+  }
+
   Future<void> _fetchData() async {
     setState(() {
       isLoading = true;
@@ -114,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       String url = '';
 
-      if (selectedFilter == 'Home') {
+      if (selectedFilter == 'Home' || selectedFilter == 'Top Anime') {
         url = '$baseUrl/top/anime?page=$currentPage';
       } else if (selectedFilter == 'Jadwal Rilis') {
         final dayApi = _days.firstWhere(
@@ -424,6 +461,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
     }
 
+    if (selectedFilter == 'Top Anime') {
+      return _bottomNavItems.indexWhere((item) => item.filter == 'Home');
+    }
+
     final index = _bottomNavItems.indexWhere(
       (item) => item.filter == selectedFilter,
     );
@@ -434,6 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (selectedFilter) {
       case 'Home':
         return _buildHomeBody();
+      case 'Top Anime':
+        return _buildTopAnimeBody();
       case 'Jadwal Rilis':
         return _buildJadwalBody();
       case 'On-going Anime':
@@ -587,16 +630,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // Top Anime Grid (no pagination on Home)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-            child: Text('Top Anime', style: AppTextStyles.heading4),
+          _buildPreviewSection(
+            title: 'Top Anime',
+            animeList: animeList.take(6).toList(),
+            isLoading: isLoading,
+            onSeeAll: () => _changeFilter('Top Anime'),
           ),
-          _buildAnimeGrid(animeList),
+          _buildPreviewSection(
+            title: 'Update Terbaru',
+            animeList: latestAnimeList.take(6).toList(),
+            isLoading: isLatestLoading,
+            onSeeAll: () => _changeFilter('On-going Anime'),
+          ),
           const SizedBox(height: 20),
         ],
       ),
     );
+  }
+
+  //==== JADWAL RILIS =====
+
+  Widget _buildTopAnimeBody() {
+    return _buildScrollableGridSection(animeList, isLoading);
   }
 
   //==== JADWAL RILIS =====
@@ -865,6 +920,64 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   //==== SHARED WIDGETS =====
+
+  Widget _buildPreviewSection({
+    required String title,
+    required List<AnimeModel> animeList,
+    required bool isLoading,
+    required VoidCallback onSeeAll,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(title: title, onSeeAll: onSeeAll),
+        if (isLoading && animeList.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (animeList.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+            child: Text(
+              'No data',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else
+          _buildAnimeGrid(animeList),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required VoidCallback onSeeAll,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(title, style: AppTextStyles.heading4)),
+          TextButton(
+            onPressed: onSeeAll,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Lihat Selengkapnya',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildScrollableGridSection(List<AnimeModel> list, bool loading) {
     if (loading && list.isEmpty) {
