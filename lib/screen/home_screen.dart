@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/anime_model.dart';
+import '../config/theme/app_theme.dart';
 import 'detail_screen.dart';
 import 'search_screen.dart';
 
@@ -90,9 +91,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (selectedFilter == 'Home') {
         url = '$baseUrl/top/anime?page=$currentPage';
       } else if (selectedFilter == 'Jadwal Rilis') {
-        final dayApi = _days
-            .firstWhere((d) => d['label'] == selectedDay,
-                orElse: () => {'label': 'Senin', 'api': 'monday'})['api']!;
+        final dayApi = _days.firstWhere(
+          (d) => d['label'] == selectedDay,
+          orElse: () => {'label': 'Senin', 'api': 'monday'},
+        )['api']!;
         url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
       } else if (selectedFilter == 'On-going Anime') {
         url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
@@ -107,8 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched =
-            dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final List<AnimeModel> fetched = dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
         if (mounted) {
           setState(() {
             animeList = fetched;
@@ -123,8 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -143,8 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched =
-            dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final List<AnimeModel> fetched = dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
         if (mounted) {
           setState(() {
             genreAnimeList = fetched;
@@ -159,8 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isGenreAnimeLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -232,18 +238,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
         title: const Text(
           'Suinime',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.white),
         ),
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: AppColors.white),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SearchScreen()),
@@ -263,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFilterNavigation() {
     return Container(
       height: 48,
-      color: const Color(0xFF1A1A1A),
+      color: AppColors.darkSurface,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -277,12 +283,11 @@ class _HomeScreenState extends State<HomeScreen> {
               label: Text(filter),
               selected: isSelected,
               onSelected: (_) => _changeFilter(filter),
-              backgroundColor: const Color(0xFF2A2A2A),
-              selectedColor: Colors.orange,
+              backgroundColor: AppColors.divider,
+              selectedColor: AppColors.accentOrange,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.black : Colors.white,
-                fontWeight:
-                    isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppColors.dark : AppColors.white,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),
               side: BorderSide.none,
@@ -315,11 +320,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeBody() {
     if (isLoading && animeList.isEmpty) {
       return const Center(
-          child: CircularProgressIndicator(color: Colors.orange));
+        child: CircularProgressIndicator(color: AppColors.accentOrange),
+      );
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(
-        child: Text('No data', style: TextStyle(color: Colors.white70)),
+        child: Text(
+          'No data',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
 
@@ -333,11 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (heroList.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Text('Featured',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
+              child: Text('Featured', style: AppTextStyles.heading4),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -353,26 +358,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) =>
-                                  DetailScreen(malId: anime.malId)),
+                            builder: (_) => DetailScreen(malId: anime.malId),
+                          ),
                         ),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.network(anime.imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.grey[900],
-                                    child: const Icon(Icons.broken_image,
-                                        color: Colors.white54))),
+                            Image.network(
+                              anime.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: AppColors.darkSurface,
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                            ),
                             Container(
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
                                     Colors.transparent,
-                                    Colors.black87
+                                    AppColors.dark.withOpacity(0.7),
                                   ],
                                 ),
                               ),
@@ -384,23 +394,27 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(anime.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold)),
+                                  Text(
+                                    anime.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.bodyLarge,
+                                  ),
                                   if (anime.score != null)
-                                    Row(children: [
-                                      const Icon(Icons.star,
-                                          color: Colors.orange, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(anime.score!.toStringAsFixed(1),
-                                          style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12)),
-                                    ]),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          color: AppColors.accentOrange,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          anime.score!.toStringAsFixed(1),
+                                          style: AppTextStyles.caption,
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),
@@ -418,11 +432,14 @@ class _HomeScreenState extends State<HomeScreen> {
           if (watchHistory.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: Text('Tontonan Terakhir',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
+              child: Text(
+                'Tontonan Terakhir',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             SizedBox(
               height: 130,
@@ -445,11 +462,14 @@ class _HomeScreenState extends State<HomeScreen> {
           // Top Anime Grid (no pagination on Home)
           const Padding(
             padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-            child: Text('Top Anime',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
+            child: Text(
+              'Top Anime',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           _buildAnimeGrid(animeList),
           const SizedBox(height: 20),
@@ -481,18 +501,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.orange
-                          : const Color(0xFF2A2A2A),
+                          ? AppColors.accentOrange
+                          : AppColors.divider,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
                       child: Text(
                         day,
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
+                          color: isSelected ? AppColors.dark : AppColors.white,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -506,9 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        Expanded(
-          child: _buildScrollableGridSection(animeList, isLoading),
-        ),
+        Expanded(child: _buildScrollableGridSection(animeList, isLoading)),
       ],
     );
   }
@@ -517,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildOngoingBody() {
     return _buildScrollableGridSection(animeList, isLoading);
   }
+
   Widget _buildCompletedBody() {
     return _buildScrollableGridSection(animeList, isLoading);
   }
@@ -533,7 +554,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const Padding(
               padding: EdgeInsets.all(24),
               child: Center(
-                  child: CircularProgressIndicator(color: Colors.orange)),
+                child: CircularProgressIndicator(color: AppColors.accentOrange),
+              ),
             )
           else
             Padding(
@@ -542,30 +564,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: genres.map((genre) {
-                  final isSelected =
-                      selectedGenre?['id'] == genre['id'];
+                  final isSelected = selectedGenre?['id'] == genre['id'];
                   return GestureDetector(
                     onTap: () => _selectGenre(genre),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.orange
-                            : const Color(0xFF1A1A1A),
+                            ? AppColors.accentOrange
+                            : AppColors.darkSurface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isSelected
-                              ? Colors.orange
-                              : Colors.white24,
+                              ? AppColors.accentOrange
+                              : AppColors.border.withOpacity(0.5),
                           width: 1,
                         ),
                       ),
                       child: Text(
                         genre['name'],
                         style: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white70,
+                          color: isSelected
+                              ? AppColors.dark
+                              : AppColors.textSecondary,
                           fontSize: 13,
                           fontWeight: isSelected
                               ? FontWeight.bold
@@ -585,23 +610,27 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 selectedGenre!['name'],
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             if (isGenreAnimeLoading)
               const Padding(
                 padding: EdgeInsets.all(40),
                 child: Center(
-                    child: CircularProgressIndicator(color: Colors.orange)),
+                  child: CircularProgressIndicator(color: Colors.orange),
+                ),
               )
             else if (genreAnimeList.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(
-                  child: Text('No anime found',
-                      style: TextStyle(color: Colors.white54)),
+                  child: Text(
+                    'No anime found',
+                    style: TextStyle(color: Colors.white54),
+                  ),
                 ),
               )
             else ...[
@@ -617,15 +646,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //==== SHARED WIDGETS =====
 
-  Widget _buildScrollableGridSection(
-      List<AnimeModel> list, bool loading) {
+  Widget _buildScrollableGridSection(List<AnimeModel> list, bool loading) {
     if (loading && list.isEmpty) {
       return const Center(
-          child: CircularProgressIndicator(color: Colors.orange));
+        child: CircularProgressIndicator(color: AppColors.accentOrange),
+      );
     }
     if (list.isEmpty && !loading) {
       return const Center(
-        child: Text('No data', style: TextStyle(color: Colors.white70)),
+        child: Text(
+          'No data',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
 
@@ -662,12 +694,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-            builder: (_) => DetailScreen(malId: anime.malId)),
+        MaterialPageRoute(builder: (_) => DetailScreen(malId: anime.malId)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: AppColors.darkSurface,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -686,19 +717,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey[900],
+                    color: AppColors.darkSurface,
                     child: const Center(
-                      child:
-                          Icon(Icons.broken_image, color: Colors.white54),
+                      child: Icon(
+                        Icons.broken_image,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                   ),
                   loadingBuilder: (_, child, progress) {
                     if (progress == null) return child;
                     return Container(
-                      color: Colors.grey[900],
+                      color: AppColors.darkSurface,
                       child: const Center(
-                        child:
-                            CircularProgressIndicator(color: Colors.orange),
+                        child: CircularProgressIndicator(
+                          color: AppColors.accentOrange,
+                        ),
                       ),
                     );
                   },
@@ -718,24 +752,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       anime.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
+                      style: AppTextStyles.labelMedium,
                     ),
                     if (anime.score != null)
                       Row(
                         children: [
-                          const Icon(Icons.star,
-                              color: Colors.orange, size: 12),
+                          const Icon(
+                            Icons.star,
+                            color: AppColors.accentOrange,
+                            size: 12,
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             anime.score!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                            ),
+                            style: AppTextStyles.caption,
                           ),
                         ],
                       ),
@@ -758,45 +788,39 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: currentPage == 1 ? null : _prevPage,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              disabledBackgroundColor: Colors.grey[800],
+              backgroundColor: AppColors.accentOrange,
+              disabledBackgroundColor: AppColors.darkSurface,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: const Text('Previous',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Previous',
+              style: TextStyle(color: AppColors.white),
+            ),
           ),
           const SizedBox(width: 16),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppColors.darkSurface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange, width: 1),
+              border: Border.all(color: AppColors.accentOrange, width: 1),
             ),
-            child: Text(
-              'Page $currentPage',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14),
-            ),
+            child: Text('Page $currentPage', style: AppTextStyles.labelLarge),
           ),
           const SizedBox(width: 16),
           ElevatedButton(
             onPressed: _nextPage,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.accentOrange,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child:
-                const Text('Next', style: TextStyle(color: Colors.white)),
+            child: const Text('Next', style: TextStyle(color: AppColors.white)),
           ),
         ],
       ),

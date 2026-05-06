@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
+import '../config/theme/app_theme.dart';
 import 'detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -52,29 +53,29 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
         title: TextField(
           controller: _searchController,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: AppColors.white),
           decoration: InputDecoration(
-            hintText: MediaQuery.of(context).size.width < 600 
-                ? 'Cari anime...' 
+            hintText: MediaQuery.of(context).size.width < 600
+                ? 'Cari anime...'
                 : 'Cari anime favoritmu...',
-            hintStyle: const TextStyle(color: Colors.white54),
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
             border: InputBorder.none,
           ),
           onSubmitted: (_) => _performSearch(),
         ),
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppColors.darkSurface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: AppColors.white),
             onPressed: _performSearch,
           ),
         ],
@@ -89,16 +90,21 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search, size: 64, color: Colors.white24),
+            Icon(Icons.search, size: 64, color: AppColors.textTertiary),
             SizedBox(height: 16),
-            Text('Cari anime favoritmu', style: TextStyle(color: Colors.white54)),
+            Text(
+              'Cari anime favoritmu',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ],
         ),
       );
     }
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.orange));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.orange),
+      );
     }
 
     if (_errorMessage != null) {
@@ -122,7 +128,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
     if (_searchResults.isEmpty) {
       return const Center(
-        child: Text('Tidak ada anime ditemukan', style: TextStyle(color: Colors.white54)),
+        child: Text(
+          'Tidak ada anime ditemukan',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
 
@@ -130,7 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
       builder: (context, constraints) {
         // Di tablet/desktop, tampilkan grid, di mobile tampilkan list
         final isTabletOrDesktop = constraints.maxWidth >= 600;
-        
+
         if (isTabletOrDesktop) {
           return GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -168,7 +177,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: AppColors.darkSurface,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -187,8 +196,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   return Container(
                     width: 80,
                     height: 120,
-                    color: Colors.grey[900],
-                    child: const Icon(Icons.broken_image, color: Colors.white54),
+                    color: AppColors.darkSurface,
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: AppColors.textTertiary,
+                    ),
                   );
                 },
               ),
@@ -213,11 +225,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (anime.score != null)
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.orange, size: 16),
+                          const Icon(
+                            Icons.star,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${anime.score!.toStringAsFixed(1)}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -292,7 +311,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${anime.score!.toStringAsFixed(1)}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),

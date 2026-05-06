@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/theme/app_theme.dart';
 
 class DetailScreen extends StatefulWidget {
   final int malId;
   final Map<String, dynamic>? animeInfo;
 
-  const DetailScreen({
-    super.key,
-    required this.malId,
-    this.animeInfo,
-  });
+  const DetailScreen({super.key, required this.malId, this.animeInfo});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
@@ -66,11 +63,15 @@ class _DetailScreenState extends State<DetailScreen> {
           setState(() {
             detailData = {
               'title': data['title'] ?? widget.animeInfo?['title'] ?? '',
-              'imageUrl': data['images']?['jpg']?['large_image_url'] ??
-                  widget.animeInfo?['imageUrl'] ?? '',
-              'backdropUrl': data['trailer']?['images']?['maximum_image_url'] ??
+              'imageUrl':
                   data['images']?['jpg']?['large_image_url'] ??
-                  widget.animeInfo?['imageUrl'] ?? '',
+                  widget.animeInfo?['imageUrl'] ??
+                  '',
+              'backdropUrl':
+                  data['trailer']?['images']?['maximum_image_url'] ??
+                  data['images']?['jpg']?['large_image_url'] ??
+                  widget.animeInfo?['imageUrl'] ??
+                  '',
               'score': data['score'],
               'synopsis': data['synopsis'] ?? '',
               'status': data['status'] ?? '',
@@ -135,8 +136,7 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> fetchEpisodes(int malId,
-      {int page = 1}) async {
+  Future<Map<String, dynamic>> fetchEpisodes(int malId, {int page = 1}) async {
     final response = await http
         .get(Uri.parse('$baseUrl/anime/$malId/episodes?page=$page'))
         .timeout(const Duration(seconds: 10));
@@ -176,8 +176,7 @@ class _DetailScreenState extends State<DetailScreen> {
       final result = await fetchEpisodes(widget.malId, page: episodePage);
       if (mounted) {
         setState(() {
-          episodes.addAll(
-              result['episodes'] as List<Map<String, dynamic>>);
+          episodes.addAll(result['episodes'] as List<Map<String, dynamic>>);
           hasMoreEpisodes = result['hasMore'] as bool;
         });
       }
@@ -197,43 +196,37 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final info = detailData.isNotEmpty
-        ? detailData
-        : (widget.animeInfo ?? {});
+    final info = detailData.isNotEmpty ? detailData : (widget.animeInfo ?? {});
 
-    final String title =
-        info['title']?.toString() ?? 'Unknown Title';
+    final String title = info['title']?.toString() ?? 'Unknown Title';
     final String imageUrl = info['imageUrl']?.toString() ?? '';
-    final String backdropUrl =
-        info['backdropUrl']?.toString() ?? imageUrl;
+    final String backdropUrl = info['backdropUrl']?.toString() ?? imageUrl;
     final double? score = info['score'] != null
         ? double.tryParse(info['score'].toString())
         : null;
     final String synopsis =
         info['synopsis']?.toString() ?? 'No synopsis available.';
     final String status = info['status']?.toString() ?? '-';
-    final String releaseDate =
-        info['releaseDate']?.toString() ?? '-';
+    final String releaseDate = info['releaseDate']?.toString() ?? '-';
     final List<String> genres = info['genres'] is List
-        ? List<String>.from(
-            (info['genres'] as List).map((g) => g.toString()))
+        ? List<String>.from((info['genres'] as List).map((g) => g.toString()))
         : [];
     final String duration = info['duration']?.toString() ?? '-';
     final String rating = info['rating']?.toString() ?? '-';
     final String source = info['source']?.toString() ?? '-';
     final String type = info['type']?.toString() ?? '-';
     final List<String> studios = info['studios'] is List
-        ? List<String>.from(
-            (info['studios'] as List).map((s) => s.toString()))
+        ? List<String>.from((info['studios'] as List).map((s) => s.toString()))
         : [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.darkBg,
       body: SafeArea(
         top: false,
         child: isDetailLoading && detailData.isEmpty
             ? const Center(
-                child: CircularProgressIndicator(color: Colors.orange))
+                child: CircularProgressIndicator(color: AppColors.accentOrange),
+              )
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,18 +293,20 @@ class _DetailScreenState extends State<DetailScreen> {
                         ? Image.network(
                             backdropUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: const Color(0xFF1A1A1A),
-                            ),
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: AppColors.darkSurface),
                           )
-                        : Container(color: const Color(0xFF1A1A1A)),
+                        : Container(color: AppColors.darkSurface),
                     Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black87],
-                          stops: [0.4, 1.0],
+                          colors: [
+                            Colors.transparent,
+                            AppColors.dark.withOpacity(0.7),
+                          ],
+                          stops: const [0.4, 1.0],
                         ),
                       ),
                     ),
@@ -319,11 +314,13 @@ class _DetailScreenState extends State<DetailScreen> {
                       top: MediaQuery.of(context).padding.top + 8,
                       left: 8,
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new,
-                            color: Colors.white),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: AppColors.white,
+                        ),
                         onPressed: () => Navigator.pop(context),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.black45,
+                          backgroundColor: AppColors.dark.withOpacity(0.3),
                           shape: const CircleBorder(),
                         ),
                       ),
@@ -346,11 +343,11 @@ class _DetailScreenState extends State<DetailScreen> {
                       height: posterHeight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Colors.black54,
+                            color: AppColors.dark.withOpacity(0.4),
                             blurRadius: 12,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -361,15 +358,19 @@ class _DetailScreenState extends State<DetailScreen> {
                                 imageUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Container(
-                                  color: const Color(0xFF2A2A2A),
-                                  child: const Icon(Icons.broken_image,
-                                      color: Colors.white54),
+                                  color: AppColors.darkSurface,
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: AppColors.textTertiary,
+                                  ),
                                 ),
                               )
                             : Container(
-                                color: const Color(0xFF2A2A2A),
-                                child: const Icon(Icons.broken_image,
-                                    color: Colors.white54),
+                                color: AppColors.darkSurface,
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: AppColors.textTertiary,
+                                ),
                               ),
                       ),
                     ),
@@ -386,12 +387,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           children: [
                             Text(
                               title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                height: 1.3,
-                              ),
+                              style: AppTextStyles.heading4,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -399,13 +395,16 @@ class _DetailScreenState extends State<DetailScreen> {
                             if (score != null)
                               Row(
                                 children: [
-                                  const Icon(Icons.star,
-                                      color: Colors.orange, size: 16),
+                                  const Icon(
+                                    Icons.star,
+                                    color: AppColors.accentOrange,
+                                    size: 16,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     score.toStringAsFixed(1),
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -413,8 +412,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                   const Text(
                                     ' / 10',
                                     style: TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 12),
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -437,10 +437,10 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget _statusBadge(String status) {
     if (status.isEmpty || status == '-') return const SizedBox.shrink();
     final color = status.toLowerCase().contains('airing')
-        ? Colors.green
+        ? AppColors.success
         : status.toLowerCase().contains('finished')
-            ? Colors.blue
-            : Colors.orange;
+        ? AppColors.primary
+        : AppColors.accentOrange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -469,14 +469,7 @@ class _DetailScreenState extends State<DetailScreen> {
         children: [
           _sectionTitle('Description'),
           const SizedBox(height: 8),
-          Text(
-            synopsis,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-              height: 1.6,
-            ),
-          ),
+          Text(synopsis, style: AppTextStyles.textSecondary),
         ],
       ),
     );
@@ -498,17 +491,21 @@ class _DetailScreenState extends State<DetailScreen> {
             children: genres.map((genre) {
               return Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.15),
+                  color: AppColors.accentOrange.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: Colors.orange.withOpacity(0.6), width: 1),
+                    color: AppColors.accentOrange.withOpacity(0.6),
+                    width: 1,
+                  ),
                 ),
                 child: Text(
                   genre,
                   style: const TextStyle(
-                    color: Colors.orange,
+                    color: AppColors.accentOrange,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -539,8 +536,7 @@ class _DetailScreenState extends State<DetailScreen> {
       {'label': 'Source', 'value': source},
       {'label': 'Duration', 'value': duration},
       {'label': 'Rating', 'value': rating},
-      if (studios.isNotEmpty)
-        {'label': 'Studio', 'value': studios.join(', ')},
+      if (studios.isNotEmpty) {'label': 'Studio', 'value': studios.join(', ')},
     ];
 
     return Padding(
@@ -561,20 +557,12 @@ class _DetailScreenState extends State<DetailScreen> {
                   children: [
                     Text(
                       '${item['label']}: ',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: AppTextStyles.textTertiary,
                     ),
                     Flexible(
                       child: Text(
                         item['value'] ?? '-',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTextStyles.labelMedium,
                       ),
                     ),
                   ],
@@ -602,8 +590,7 @@ class _DetailScreenState extends State<DetailScreen> {
               if (episodes.isNotEmpty)
                 Text(
                   '${episodes.length} eps',
-                  style: const TextStyle(
-                      color: Colors.white54, fontSize: 12),
+                  style: AppTextStyles.textTertiary,
                 ),
             ],
           ),
@@ -612,7 +599,7 @@ class _DetailScreenState extends State<DetailScreen> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(color: Colors.orange),
+                child: CircularProgressIndicator(color: AppColors.accentOrange),
               ),
             )
           else if (episodeError != null && episodes.isEmpty)
@@ -622,14 +609,18 @@ class _DetailScreenState extends State<DetailScreen> {
                   Text(
                     episodeError!,
                     style: const TextStyle(
-                        color: Colors.red, fontSize: 13),
+                      color: AppColors.error,
+                      fontSize: 13,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: _loadEpisodes,
-                    child: const Text('Retry',
-                        style: TextStyle(color: Colors.orange)),
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: AppColors.accentOrange),
+                    ),
                   ),
                 ],
               ),
@@ -640,8 +631,10 @@ class _DetailScreenState extends State<DetailScreen> {
                 padding: EdgeInsets.all(24),
                 child: Text(
                   'No episodes available.',
-                  style:
-                      TextStyle(color: Colors.white54, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
@@ -651,8 +644,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 72,
                     mainAxisExtent: 52,
                     crossAxisSpacing: 8,
@@ -661,8 +653,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   itemCount: episodes.length,
                   itemBuilder: (context, index) {
                     final ep = episodes[index];
-                    final epNumber =
-                        ep['number']?.toString() ?? '${index + 1}';
+                    final epNumber = ep['number']?.toString() ?? '${index + 1}';
                     final bool isFiller = ep['filler'] == true;
                     final bool isRecap = ep['recap'] == true;
 
@@ -673,29 +664,22 @@ class _DetailScreenState extends State<DetailScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isFiller
-                              ? Colors.blue.withOpacity(0.15)
+                              ? AppColors.primary.withOpacity(0.15)
                               : isRecap
-                                  ? Colors.purple.withOpacity(0.15)
-                                  : const Color(0xFF1A1A1A),
+                              ? AppColors.warning.withOpacity(0.15)
+                              : AppColors.darkSurface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isFiller
-                                ? Colors.blue.withOpacity(0.5)
+                                ? AppColors.primary.withOpacity(0.5)
                                 : isRecap
-                                    ? Colors.purple.withOpacity(0.5)
-                                    : Colors.orange.withOpacity(0.4),
+                                ? AppColors.warning.withOpacity(0.5)
+                                : AppColors.accentOrange.withOpacity(0.4),
                             width: 1,
                           ),
                         ),
                         child: Center(
-                          child: Text(
-                            epNumber,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+                          child: Text(epNumber, style: AppTextStyles.heading4),
                         ),
                       ),
                     );
@@ -708,16 +692,13 @@ class _DetailScreenState extends State<DetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      onPressed: isEpisodeLoading
-                          ? null
-                          : _loadMoreEpisodes,
+                      onPressed: isEpisodeLoading ? null : _loadMoreEpisodes,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.orange),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       child: isEpisodeLoading
                           ? const SizedBox(

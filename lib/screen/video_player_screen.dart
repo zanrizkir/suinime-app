@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../services/consumet_service.dart';
+import '../config/theme/app_theme.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String animeTitle;
@@ -47,27 +48,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
 
       if (result['success'] && result['videoSources'] != null) {
-        final videoSources = result['videoSources'] as List<Map<String, dynamic>>;
-        
+        final videoSources =
+            result['videoSources'] as List<Map<String, dynamic>>;
+
         if (videoSources.isNotEmpty) {
           // Ambil URL kualitas tertinggi (sudah terurut dari service)
           final bestQualitySource = videoSources.first;
           final videoUrl = bestQualitySource['url'] as String;
-          
+
           // Inisialisasi VideoPlayerController
           final controller = VideoPlayerController.networkUrl(
             Uri.parse(videoUrl),
           );
-          
+
           try {
             // Initialize dengan try-catch untuk mencegah memory leak [citation:2]
             await controller.initialize();
-            
+
             if (!mounted) {
               await controller.dispose();
               return;
             }
-            
+
             // Setup ChewieController
             _chewieController = ChewieController(
               videoPlayerController: controller,
@@ -97,7 +99,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                       ),
                       Text(
                         errorMessage,
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -105,9 +110,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 );
               },
             );
-            
+
             _videoPlayerController = controller;
-            
+
             if (mounted) {
               setState(() {
                 _isLoading = false;
@@ -153,7 +158,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.dark,
       appBar: _buildAppBar(),
       body: _buildBody(),
     );
@@ -174,10 +179,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           ),
         ],
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.dark,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: const Icon(Icons.arrow_back, color: AppColors.white),
         onPressed: () => Navigator.pop(context),
       ),
     );
@@ -191,12 +196,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
             ),
             SizedBox(height: 16),
             Text(
               'Memuat video...',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -211,16 +216,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: Colors.red,
-                size: 64,
-              ),
+              const Icon(Icons.error_outline, color: Colors.red, size: 64),
               const SizedBox(height: 16),
               Text(
                 'Gagal Memuat Video',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -237,8 +238,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba Lagi'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.black,
+                  backgroundColor: AppColors.accentOrange,
+                  foregroundColor: AppColors.dark,
                 ),
               ),
             ],
@@ -249,16 +250,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     // State Success - Menampilkan Video Player
     if (_chewieController != null && _videoPlayerController != null) {
-      return Chewie(
-        controller: _chewieController!,
-      );
+      return Chewie(controller: _chewieController!);
     }
 
     // Fallback
     return const Center(
       child: Text(
         'Tidak dapat memuat player',
-        style: TextStyle(color: Colors.white),
+        style: TextStyle(color: AppColors.white),
       ),
     );
   }

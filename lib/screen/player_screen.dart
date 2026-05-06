@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../config/theme/app_theme.dart';
 
 // Constants
 const double _horizontalPadding = 16.0;
@@ -8,10 +9,10 @@ const double _borderRadius = 12.0;
 const Duration _controlsAutoHideDuration = Duration(seconds: 5);
 
 // Colors
-const Color _darkBackground = Color(0xFF0F0F0F);
-const Color _darkSurface = Color(0xFF1A1A1A);
-const Color _accentColor = Color(0xFFFF6B6B);
-const Color _textSecondary = Color(0xFFB0B0B0);
+const Color _darkBackground = AppColors.darkBg;
+const Color _darkSurface = AppColors.darkSurface;
+const Color _accentColor = AppColors.accentOrange;
+const Color _textSecondary = AppColors.textSecondary;
 
 // Dummy data models
 class EpisodeData {
@@ -30,8 +31,16 @@ class EpisodeData {
 final List<EpisodeData> dummyEpisodes = [
   EpisodeData(episodeNumber: 1, title: 'Ryomen Sukuna', duration: '23m'),
   EpisodeData(episodeNumber: 2, title: 'Jujutsu High', duration: '24m'),
-  EpisodeData(episodeNumber: 3, title: 'Girl of the Occult Club', duration: '24m'),
-  EpisodeData(episodeNumber: 4, title: 'Curse Womb Arc Begins', duration: '24m'),
+  EpisodeData(
+    episodeNumber: 3,
+    title: 'Girl of the Occult Club',
+    duration: '24m',
+  ),
+  EpisodeData(
+    episodeNumber: 4,
+    title: 'Curse Womb Arc Begins',
+    duration: '24m',
+  ),
   EpisodeData(episodeNumber: 5, title: 'Creeping Darkness', duration: '24m'),
   EpisodeData(episodeNumber: 6, title: 'After Rain', duration: '24m'),
   EpisodeData(episodeNumber: 7, title: 'Assault', duration: '24m'),
@@ -64,14 +73,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   void _initializeVideoPlayer() {
-    _videoController = VideoPlayerController.networkUrl(
-      Uri.parse(
-        'https://commondatastorage.googleapis.com/gtv-videos-library/sample/BigBuckBunny.mp4',
-      ),
-    )..initialize().then((_) {
-        setState(() {});
-        _videoController.play();
-      });
+    _videoController =
+        VideoPlayerController.networkUrl(
+            Uri.parse(
+              'https://commondatastorage.googleapis.com/gtv-videos-library/sample/BigBuckBunny.mp4',
+            ),
+          )
+          ..initialize().then((_) {
+            setState(() {});
+            _videoController.play();
+          });
   }
 
   void _togglePlayPause() {
@@ -158,9 +169,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             : AspectRatio(
                 aspectRatio: _videoAspectRatio,
                 child: const Center(
-                  child: CircularProgressIndicator(
-                    color: _accentColor,
-                  ),
+                  child: CircularProgressIndicator(color: _accentColor),
                 ),
               ),
       ),
@@ -189,10 +198,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
           SizedBox(height: 8),
           Text(
             '${widget.animeTitle} • Duration: ${currentEpisode.duration}',
-            style: const TextStyle(
-              color: _textSecondary,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: _textSecondary, fontSize: 13),
           ),
         ],
       ),
@@ -224,7 +230,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   padding: const EdgeInsets.only(right: 12),
                   child: EpisodeSelectorItem(
                     episode: dummyEpisodes[index],
-                    isCurrentEpisode: dummyEpisodes[index].episodeNumber ==
+                    isCurrentEpisode:
+                        dummyEpisodes[index].episodeNumber ==
                         widget.currentEpisodeNumber,
                     onTap: () {
                       debugPrint(
@@ -428,7 +435,9 @@ class EpisodeSelectorItem extends StatelessWidget {
       child: Container(
         width: 120,
         decoration: BoxDecoration(
-          color: isCurrentEpisode ? _accentColor.withOpacity(0.3) : _darkSurface,
+          color: isCurrentEpisode
+              ? _accentColor.withOpacity(0.3)
+              : _darkSurface,
           borderRadius: BorderRadius.circular(_borderRadius),
           border: Border.all(
             color: isCurrentEpisode ? _accentColor : Colors.grey[800]!,
@@ -454,18 +463,12 @@ class EpisodeSelectorItem extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _textSecondary,
-                fontSize: 10,
-              ),
+              style: const TextStyle(color: _textSecondary, fontSize: 10),
             ),
             SizedBox(height: 6),
             Text(
               episode.duration,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 9,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 9),
             ),
           ],
         ),
