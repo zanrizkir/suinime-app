@@ -5,12 +5,18 @@ import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../detail_screen.dart';
 import '../widgets/home_views.dart';
-import '../widgets/pagination_controls.dart';
 
 class DashboardTab extends StatefulWidget {
   final String filter;
+  final VoidCallback onTopAnimeSeeAll;
+  final VoidCallback onLatestAnimeSeeAll;
 
-  const DashboardTab({super.key, required this.filter});
+  const DashboardTab({
+    super.key,
+    required this.filter,
+    required this.onTopAnimeSeeAll,
+    required this.onLatestAnimeSeeAll,
+  });
 
   @override
   State<DashboardTab> createState() => _DashboardTabState();
@@ -32,6 +38,18 @@ class _DashboardTabState extends State<DashboardTab> {
     _fetchData();
     _fetchLatestAnime();
     _loadWatchHistory();
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filter != widget.filter) {
+      setState(() {
+        currentPage = 1;
+        animeList = [];
+      });
+      _fetchData();
+    }
   }
 
   Future<void> _loadWatchHistory() async {
@@ -78,6 +96,8 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   Future<void> _fetchData() async {
+    final filter = widget.filter;
+
     setState(() {
       isLoading = true;
     });
@@ -85,8 +105,10 @@ class _DashboardTabState extends State<DashboardTab> {
     try {
       String url = '';
 
-      if (widget.filter == 'Home' || widget.filter == 'Top Anime') {
+      if (filter == 'Home' || filter == 'Top Anime') {
         url = '$baseUrl/top/anime?page=$currentPage';
+      } else if (filter == 'On-going Anime') {
+        url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
       }
 
       final response = await http.get(Uri.parse(url));
@@ -96,7 +118,7 @@ class _DashboardTabState extends State<DashboardTab> {
         final List<AnimeModel> fetched = dataList
             .map((item) => AnimeModel.fromJson(item))
             .toList();
-        if (mounted) {
+        if (mounted && widget.filter == filter) {
           setState(() {
             animeList = fetched;
             isLoading = false;
@@ -106,7 +128,7 @@ class _DashboardTabState extends State<DashboardTab> {
         throw Exception('Failed to load data');
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && widget.filter == filter) {
         setState(() {
           isLoading = false;
         });
@@ -140,6 +162,8 @@ class _DashboardTabState extends State<DashboardTab> {
       return _buildHomeBody();
     } else if (widget.filter == 'Top Anime') {
       return _buildTopAnimeBody();
+    } else if (widget.filter == 'On-going Anime') {
+      return _buildOngoingAnimeBody();
     }
     return const SizedBox.shrink();
   }
@@ -195,7 +219,7 @@ class _DashboardTabState extends State<DashboardTab> {
                             Image.network(
                               anime.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (_, _, _) => Container(
                                 color: AppColors.darkSurface,
                                 child: const Icon(
                                   Icons.broken_image,
@@ -284,14 +308,14 @@ class _DashboardTabState extends State<DashboardTab> {
             title: 'Top Anime',
             animeList: animeList.take(6).toList(),
             isLoading: isLoading,
-            onSeeAll: () {},
+            onSeeAll: widget.onTopAnimeSeeAll,
           ),
           HomeViews.buildPreviewSection(
             context: context,
             title: 'Update Terbaru',
             animeList: latestAnimeList.take(6).toList(),
             isLoading: isLatestLoading,
-            onSeeAll: () {},
+            onSeeAll: widget.onLatestAnimeSeeAll,
           ),
           const SizedBox(height: 20),
         ],
@@ -302,6 +326,17 @@ class _DashboardTabState extends State<DashboardTab> {
   //==== TOP ANIME =====
 
   Widget _buildTopAnimeBody() {
+    return HomeViews.buildScrollableGridSection(
+      context: context,
+      animeList: animeList,
+      isLoading: isLoading,
+      currentPage: currentPage,
+      onPrevPage: currentPage == 1 ? null : _prevPage,
+      onNextPage: _nextPage,
+    );
+  }
+
+  Widget _buildOngoingAnimeBody() {
     return HomeViews.buildScrollableGridSection(
       context: context,
       animeList: animeList,

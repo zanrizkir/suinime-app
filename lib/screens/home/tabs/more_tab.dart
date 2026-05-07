@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
 
 class MoreTab extends StatefulWidget {
-  final VoidCallback onOngoingTap;
   final VoidCallback onCompletedTap;
 
-  const MoreTab({
-    super.key,
-    required this.onOngoingTap,
-    required this.onCompletedTap,
-  });
+  const MoreTab({super.key, required this.onCompletedTap});
 
   @override
   State<MoreTab> createState() => _MoreTabState();
@@ -27,13 +22,6 @@ class _MoreTabState extends State<MoreTab> {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
-        _buildMoreMenuTile(
-          icon: Icons.play_circle_outline_rounded,
-          title: 'On-going Anime',
-          subtitle: 'Anime yang sedang tayang',
-          onTap: widget.onOngoingTap,
-        ),
-        const SizedBox(height: 10),
         _buildMoreMenuTile(
           icon: Icons.check_circle_outline_rounded,
           title: 'Completed Anime',

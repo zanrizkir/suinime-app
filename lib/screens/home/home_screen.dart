@@ -4,14 +4,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/anime_model.dart';
 import '../../config/theme/app_theme.dart';
-import '../detail_screen.dart';
 import '../search_screen.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import 'widgets/anime_grid_card.dart';
 import 'widgets/pagination_controls.dart';
-import 'widgets/section_header.dart';
 import 'widgets/home_views.dart';
+import 'tabs/dashboard_tab.dart';
+import 'tabs/more_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,18 +22,15 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedFilter = 'Home';
   int currentPage = 1;
   bool isLoading = false;
-  bool isLatestLoading = false;
   bool isGenreAnimeLoading = false;
   List<AnimeModel> animeList = [];
-  List<AnimeModel> latestAnimeList = [];
   List<AnimeModel> genreAnimeList = [];
   List<Map<String, dynamic>> watchHistory = [];
   List<Map<String, dynamic>> genres = [];
   String selectedDay = 'Senin';
   Map<String, dynamic>? selectedGenre;
 
-  final TextEditingController _searchEntryController =
-      TextEditingController();
+  final TextEditingController _searchEntryController = TextEditingController();
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -86,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _fetchData();
-    _fetchLatestAnime();
     _loadWatchHistory();
     _fetchGenres();
   }
@@ -125,39 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _fetchLatestAnime() async {
-    setState(() {
-      isLatestLoading = true;
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/top/anime?filter=airing&page=1'),
-      );
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'] ?? [];
-        final List<AnimeModel> fetched =
-            dataList.map((item) => AnimeModel.fromJson(item)).toList();
-        if (mounted) {
-          setState(() {
-            latestAnimeList = fetched;
-            isLatestLoading = false;
-          });
-        }
-      } else {
-        throw Exception('Failed to load latest anime');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          isLatestLoading = false;
-        });
-        debugPrint('Error fetching latest anime: $e');
-      }
-    }
-  }
-
   Future<void> _fetchData() async {
     setState(() {
       isLoading = true;
@@ -174,15 +135,12 @@ class _HomeScreenState extends State<HomeScreen> {
           orElse: () => {'label': 'Senin', 'api': 'monday'},
         )['api']!;
         url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
-      } else if (selectedFilter == 'On-going Anime') {
-        url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
       } else if (selectedFilter == 'Genre List') {
         setState(() {
           isLoading = false;
         });
         return;
-      } else if (selectedFilter == 'Riwayat' ||
-          selectedFilter == 'Lainnya') {
+      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
         setState(() {
           isLoading = false;
         });
@@ -193,8 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched =
-            dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final List<AnimeModel> fetched = dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
         if (mounted) {
           setState(() {
             animeList = fetched;
@@ -209,8 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -229,8 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched =
-            dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final List<AnimeModel> fetched = dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
         if (mounted) {
           setState(() {
             genreAnimeList = fetched;
@@ -245,8 +206,9 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isGenreAnimeLoading = false;
         });
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -261,6 +223,17 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedGenre = null;
     });
     _fetchData();
+  }
+
+  void _changeDashboardFilter(String filter) {
+    if (selectedFilter == filter) return;
+    setState(() {
+      selectedFilter = filter;
+      currentPage = 1;
+      animeList = [];
+      genreAnimeList = [];
+      selectedGenre = null;
+    });
   }
 
   void _changeDay(String day) {
@@ -442,11 +415,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int get _activeBottomNavIndex {
-    if (selectedFilter == 'On-going Anime' ||
-        selectedFilter == 'Completed Anime') {
+    if (selectedFilter == 'Completed Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
     }
-    if (selectedFilter == 'Top Anime') {
+    if (selectedFilter == 'Top Anime' || selectedFilter == 'On-going Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Home');
     }
     final index = _bottomNavItems.indexWhere(
@@ -460,11 +432,19 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Home':
         return _buildHomeBody();
       case 'Top Anime':
-        return _buildTopAnimeBody();
+        return DashboardTab(
+          filter: 'Top Anime',
+          onTopAnimeSeeAll: () {},
+          onLatestAnimeSeeAll: () {},
+        );
       case 'Jadwal Rilis':
         return _buildJadwalBody();
       case 'On-going Anime':
-        return _buildOngoingBody();
+        return DashboardTab(
+          filter: 'On-going Anime',
+          onTopAnimeSeeAll: () {},
+          onLatestAnimeSeeAll: () {},
+        );
       case 'Completed Anime':
         return _buildCompletedBody();
       case 'Genre List':
@@ -481,177 +461,14 @@ class _HomeScreenState extends State<HomeScreen> {
   //==== HOME =====
 
   Widget _buildHomeBody() {
-    if (isLoading && animeList.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-    if (animeList.isEmpty && !isLoading) {
-      return const Center(
-        child: Text(
-          'No data',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
-
-    final heroList = animeList.take(5).toList();
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (heroList.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Text('Featured', style: AppTextStyles.heading4),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: PageView.builder(
-                    itemCount: heroList.length,
-                    itemBuilder: (context, index) {
-                      final anime = heroList[index];
-                      return GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                DetailScreen(malId: anime.malId),
-                          ),
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              anime.imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: AppColors.darkSurface,
-                                child: const Icon(
-                                  Icons.broken_image,
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppColors.dark.withValues(alpha: 0),
-                                    AppColors.dark.withValues(alpha: 0.7),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 16,
-                              left: 16,
-                              right: 16,
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    anime.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.bodyLarge,
-                                  ),
-                                  if (anime.score != null)
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.star,
-                                          color: AppColors.warning,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          anime.score!.toStringAsFixed(1),
-                                          style: AppTextStyles.caption,
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          if (watchHistory.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: Text(
-                'Tontonan Terakhir',
-                style: AppTextStyles.heading4,
-              ),
-            ),
-            SizedBox(
-              height: 130,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: watchHistory.length,
-                itemBuilder: (context, index) => Container(
-                  width: 100,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          HomeViews.buildPreviewSection(
-            context: context,
-            title: 'Top Anime',
-            animeList: animeList.take(6).toList(),
-            isLoading: isLoading,
-            onSeeAll: () => _changeFilter('Top Anime'),
-          ),
-          HomeViews.buildPreviewSection(
-            context: context,
-            title: 'Update Terbaru',
-            animeList: latestAnimeList.take(6).toList(),
-            isLoading: isLatestLoading,
-            onSeeAll: () => _changeFilter('On-going Anime'),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
+    return DashboardTab(
+      filter: selectedFilter,
+      onTopAnimeSeeAll: () => _changeDashboardFilter('Top Anime'),
+      onLatestAnimeSeeAll: () => _changeDashboardFilter('On-going Anime'),
     );
   }
 
-  //==== TOP ANIME =====
-
-  Widget _buildTopAnimeBody() {
-    return HomeViews.buildScrollableGridSection(
-      context: context,
-      animeList: animeList,
-      isLoading: isLoading,
-      currentPage: currentPage,
-      onPrevPage: currentPage == 1 ? null : _prevPage,
-      onNextPage: _nextPage,
-    );
-  }
-
-  //==== JADWAL RILIS =====
+  //==== JADWAL RILIS ======
 
   Widget _buildJadwalBody() {
     return Column(
@@ -661,8 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
           height: 48,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             itemCount: _days.length,
             itemBuilder: (context, index) {
               final day = _days[index]['label']!;
@@ -678,18 +494,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.divider,
+                      color: isSelected ? AppColors.primary : AppColors.divider,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
                       child: Text(
                         day,
                         style: TextStyle(
-                          color: isSelected
-                              ? AppColors.dark
-                              : AppColors.white,
+                          color: isSelected ? AppColors.dark : AppColors.white,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -714,19 +526,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  //==== ON-GOING =====
-
-  Widget _buildOngoingBody() {
-    return HomeViews.buildScrollableGridSection(
-      context: context,
-      animeList: animeList,
-      isLoading: isLoading,
-      currentPage: currentPage,
-      onPrevPage: currentPage == 1 ? null : _prevPage,
-      onNextPage: _nextPage,
     );
   }
 
@@ -777,72 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //==== LAINNYA =====
 
   Widget _buildMoreBody() {
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        _buildMoreMenuTile(
-          icon: Icons.play_circle_outline_rounded,
-          title: 'On-going Anime',
-          subtitle: 'Anime yang sedang tayang',
-          onTap: () => _changeFilter('On-going Anime'),
-        ),
-        const SizedBox(height: 10),
-        _buildMoreMenuTile(
-          icon: Icons.check_circle_outline_rounded,
-          title: 'Completed Anime',
-          subtitle: 'Daftar anime yang sudah selesai',
-          onTap: () => _changeFilter('Completed Anime'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMoreMenuTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.darkSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.labelLarge),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.caption),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.lightGrey,
-            ),
-          ],
-        ),
-      ),
-    );
+    return MoreTab(onCompletedTap: () => _changeFilter('Completed Anime'));
   }
 
   //==== GENRE LIST =====
@@ -866,8 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: genres.map((genre) {
-                  final isSelected =
-                      selectedGenre?['id'] == genre['id'];
+                  final isSelected = selectedGenre?['id'] == genre['id'];
                   return GestureDetector(
                     onTap: () => _selectGenre(genre),
                     child: AnimatedContainer(
