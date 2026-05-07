@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'config/theme/app_theme.dart';
-import 'screen/home_screen.dart';
-import 'screen/detail_screen.dart';
-import 'screen/player_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/detail_screen.dart';
+import 'screens/player_screen.dart';
 import 'services/api_service.dart';
 
 void main() {

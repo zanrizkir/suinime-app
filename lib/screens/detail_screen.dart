@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/theme/app_theme.dart';
+import '../widgets/custom_button.dart';
 
 class DetailScreen extends StatefulWidget {
   final int malId;
@@ -16,11 +17,9 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   final String baseUrl = 'https://api.jikan.moe/v4';
 
-  // Detail state
   bool isDetailLoading = false;
   Map<String, dynamic> detailData = {};
 
-  // Episode state
   List<Map<String, dynamic>> episodes = [];
   bool isEpisodeLoading = false;
   String? episodeError;
@@ -37,7 +36,6 @@ class _DetailScreenState extends State<DetailScreen> {
   //==== API CALLS =====
 
   Future<void> _loadDetail() async {
-    // Jika animeInfo sudah lengkap (synopsis tersedia), skip fetch detail
     final existingSynopsis = widget.animeInfo?['synopsis']?.toString() ?? '';
     if (existingSynopsis.isNotEmpty) {
       setState(() {
@@ -136,7 +134,8 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> fetchEpisodes(int malId, {int page = 1}) async {
+  Future<Map<String, dynamic>> fetchEpisodes(int malId,
+      {int page = 1}) async {
     final response = await http
         .get(Uri.parse('$baseUrl/anime/$malId/episodes?page=$page'))
         .timeout(const Duration(seconds: 10));
@@ -176,7 +175,8 @@ class _DetailScreenState extends State<DetailScreen> {
       final result = await fetchEpisodes(widget.malId, page: episodePage);
       if (mounted) {
         setState(() {
-          episodes.addAll(result['episodes'] as List<Map<String, dynamic>>);
+          episodes.addAll(
+              result['episodes'] as List<Map<String, dynamic>>);
           hasMoreEpisodes = result['hasMore'] as bool;
         });
       }
@@ -196,11 +196,13 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final info = detailData.isNotEmpty ? detailData : (widget.animeInfo ?? {});
+    final info =
+        detailData.isNotEmpty ? detailData : (widget.animeInfo ?? {});
 
     final String title = info['title']?.toString() ?? 'Unknown Title';
     final String imageUrl = info['imageUrl']?.toString() ?? '';
-    final String backdropUrl = info['backdropUrl']?.toString() ?? imageUrl;
+    final String backdropUrl =
+        info['backdropUrl']?.toString() ?? imageUrl;
     final double? score = info['score'] != null
         ? double.tryParse(info['score'].toString())
         : null;
@@ -209,14 +211,16 @@ class _DetailScreenState extends State<DetailScreen> {
     final String status = info['status']?.toString() ?? '-';
     final String releaseDate = info['releaseDate']?.toString() ?? '-';
     final List<String> genres = info['genres'] is List
-        ? List<String>.from((info['genres'] as List).map((g) => g.toString()))
+        ? List<String>.from(
+            (info['genres'] as List).map((g) => g.toString()))
         : [];
     final String duration = info['duration']?.toString() ?? '-';
     final String rating = info['rating']?.toString() ?? '-';
     final String source = info['source']?.toString() ?? '-';
     final String type = info['type']?.toString() ?? '-';
     final List<String> studios = info['studios'] is List
-        ? List<String>.from((info['studios'] as List).map((s) => s.toString()))
+        ? List<String>.from(
+            (info['studios'] as List).map((s) => s.toString()))
         : [];
 
     return Scaffold(
@@ -259,7 +263,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  // ===== HEADER =====
+  //===== HEADER =====
 
   Widget _buildHeader(
     BuildContext context, {
@@ -282,7 +286,6 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Backdrop
               SizedBox(
                 height: backdropHeight,
                 width: double.infinity,
@@ -320,9 +323,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                         style: IconButton.styleFrom(
-                          backgroundColor: AppColors.dark.withValues(
-                            alpha: 0.3,
-                          ),
+                          backgroundColor:
+                              AppColors.dark.withValues(alpha: 0.3),
                           shape: const CircleBorder(),
                         ),
                       ),
@@ -330,8 +332,6 @@ class _DetailScreenState extends State<DetailScreen> {
                   ],
                 ),
               ),
-
-              // Poster + Info
               Positioned(
                 top: overlapOffset,
                 left: 16,
@@ -339,7 +339,6 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Poster
                     Container(
                       width: posterWidth,
                       height: posterHeight,
@@ -376,10 +375,7 @@ class _DetailScreenState extends State<DetailScreen> {
                               ),
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
-                    // Title + Meta
                     Flexible(
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 4),
@@ -644,7 +640,8 @@ class _DetailScreenState extends State<DetailScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  gridDelegate:
+                      const SliverGridDelegateWithMaxCrossAxisExtent(
                     maxCrossAxisExtent: 72,
                     mainAxisExtent: 52,
                     crossAxisSpacing: 8,
@@ -653,7 +650,8 @@ class _DetailScreenState extends State<DetailScreen> {
                   itemCount: episodes.length,
                   itemBuilder: (context, index) {
                     final ep = episodes[index];
-                    final epNumber = ep['number']?.toString() ?? '${index + 1}';
+                    final epNumber =
+                        ep['number']?.toString() ?? '${index + 1}';
                     final bool isFiller = ep['filler'] == true;
                     final bool isRecap = ep['recap'] == true;
 
@@ -666,20 +664,25 @@ class _DetailScreenState extends State<DetailScreen> {
                           color: isFiller
                               ? AppColors.primary.withValues(alpha: 0.15)
                               : isRecap
-                              ? AppColors.warning.withValues(alpha: 0.15)
-                              : AppColors.darkSurface,
+                                  ? AppColors.warning.withValues(alpha: 0.15)
+                                  : AppColors.darkSurface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isFiller
                                 ? AppColors.primary.withValues(alpha: 0.5)
                                 : isRecap
-                                ? AppColors.warning.withValues(alpha: 0.5)
-                                : AppColors.primary.withValues(alpha: 0.4),
+                                    ? AppColors.warning
+                                        .withValues(alpha: 0.5)
+                                    : AppColors.primary
+                                        .withValues(alpha: 0.4),
                             width: 1,
                           ),
                         ),
                         child: Center(
-                          child: Text(epNumber, style: AppTextStyles.heading4),
+                          child: Text(
+                            epNumber,
+                            style: AppTextStyles.heading4,
+                          ),
                         ),
                       ),
                     );
@@ -691,28 +694,12 @@ class _DetailScreenState extends State<DetailScreen> {
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: isEpisodeLoading ? null : _loadMoreEpisodes,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primary),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: isEpisodeLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Load More Episodes',
-                              style: TextStyle(color: AppColors.primary),
-                            ),
+                    child: CustomButton(
+                      text: 'Load More Episodes',
+                      isOutlined: true,
+                      isLoading: isEpisodeLoading,
+                      onPressed:
+                          isEpisodeLoading ? null : _loadMoreEpisodes,
                     ),
                   ),
                 ],

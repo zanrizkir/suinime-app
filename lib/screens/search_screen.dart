@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
 import '../config/theme/app_theme.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_text_field.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -54,17 +56,11 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBg,
       appBar: AppBar(
-        title: TextField(
+        title: CustomTextField(
           controller: _searchController,
-          style: const TextStyle(color: AppColors.white),
-          decoration: InputDecoration(
-            hintText: MediaQuery.of(context).size.width < 600
-                ? 'Cari anime...'
-                : 'Cari anime favoritmu...',
-            hintStyle: const TextStyle(color: AppColors.textSecondary),
-            border: InputBorder.none,
-          ),
-          onSubmitted: (_) => _performSearch(),
+          hintText: 'Cari anime favoritmu...',
+          prefixIcon: Icons.search_rounded,
+          keyboardType: TextInputType.text,
         ),
         backgroundColor: AppColors.darkSurface,
         elevation: 0,
@@ -111,19 +107,21 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.error, size: 60),
+            const Icon(
+              Icons.error_outline,
+              color: AppColors.error,
+              size: 60,
+            ),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
               style: const TextStyle(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            CustomButton(
+              text: 'Coba Lagi',
               onPressed: _performSearch,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: const Text('Coba Lagi'),
             ),
           ],
         ),
@@ -141,7 +139,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Di tablet/desktop, tampilkan grid, di mobile tampilkan list
         final isTabletOrDesktop = constraints.maxWidth >= 600;
 
         if (isTabletOrDesktop) {
@@ -236,7 +233,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${anime.score!.toStringAsFixed(1)}',
+                            anime.score!.toStringAsFixed(1),
                             style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12,
@@ -250,7 +247,10 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Icon(Icons.chevron_right, color: AppColors.textTertiary),
+              child: Icon(
+                Icons.chevron_right,
+                color: AppColors.textTertiary,
+              ),
             ),
           ],
         ),
@@ -321,7 +321,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${anime.score!.toStringAsFixed(1)}',
+                          anime.score!.toStringAsFixed(1),
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,

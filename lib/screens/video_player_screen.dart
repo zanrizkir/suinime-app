@@ -3,6 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../services/consumet_service.dart';
 import '../config/theme/app_theme.dart';
+import '../widgets/custom_button.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String animeTitle;
@@ -41,7 +42,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     });
 
     try {
-      // Panggil fungsi gabungan dari ConsumetService
       final result = await _consumetService.getStreamingLinkByTitleAndEpisode(
         widget.animeTitle,
         widget.episodeNumber,
@@ -52,17 +52,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             result['videoSources'] as List<Map<String, dynamic>>;
 
         if (videoSources.isNotEmpty) {
-          // Ambil URL kualitas tertinggi (sudah terurut dari service)
           final bestQualitySource = videoSources.first;
           final videoUrl = bestQualitySource['url'] as String;
 
-          // Inisialisasi VideoPlayerController
           final controller = VideoPlayerController.networkUrl(
             Uri.parse(videoUrl),
           );
 
           try {
-            // Initialize dengan try-catch untuk mencegah memory leak [citation:2]
             await controller.initialize();
 
             if (!mounted) {
@@ -70,12 +67,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               return;
             }
 
-            // Setup ChewieController
             _chewieController = ChewieController(
               videoPlayerController: controller,
               autoPlay: true,
               looping: false,
-              aspectRatio: 16 / 9, // Rasio aspek 16:9 [citation:4]
+              aspectRatio: 16 / 9,
               fullScreenByDefault: false,
               allowFullScreen: true,
               allowMuting: true,
@@ -93,9 +89,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         size: 48,
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         'Gagal memuat video',
-                        style: const TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: AppColors.textSecondary),
                       ),
                       Text(
                         errorMessage,
@@ -119,7 +115,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               });
             }
           } catch (e) {
-            // Init gagal, dispose controller untuk mencegah memory leak [citation:2]
             await controller.dispose();
             if (mounted) {
               setState(() {
@@ -133,10 +128,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           throw Exception('Tidak ada sumber video yang tersedia');
         }
       } else {
-        throw Exception(result['error'] ?? 'Gagal mendapatkan link streaming');
+        throw Exception(
+            result['error'] ?? 'Gagal mendapatkan link streaming');
       }
     } catch (e) {
-      print('Error initializing video: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -149,7 +144,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   @override
   void dispose() {
-    // Dispose dengan urutan yang benar untuk mencegah memory leak [citation:6]
     _chewieController?.dispose();
     _videoPlayerController?.dispose();
     super.dispose();
@@ -171,11 +165,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         children: [
           Text(
             widget.animeTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           Text(
             'Episode ${widget.episodeNumber}',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.normal),
           ),
         ],
       ),
@@ -189,14 +185,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   }
 
   Widget _buildBody() {
-    // State Loading
     if (_isLoading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
             SizedBox(height: 16),
             Text(
@@ -208,7 +204,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
     }
 
-    // State Error
     if (_hasError) {
       return Center(
         child: Padding(
@@ -216,11 +211,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.error, size: 64),
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.error,
+                size: 64,
+              ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Gagal Memuat Video',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -233,14 +232,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
+              CustomButton(
+                text: 'Coba Lagi',
+                icon: Icons.refresh,
                 onPressed: _initializeVideo,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.dark,
-                ),
               ),
             ],
           ),
@@ -248,12 +243,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
     }
 
-    // State Success - Menampilkan Video Player
     if (_chewieController != null && _videoPlayerController != null) {
       return Chewie(controller: _chewieController!);
     }
 
-    // Fallback
     return const Center(
       child: Text(
         'Tidak dapat memuat player',
@@ -262,7 +255,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     );
   }
 
-  // Method untuk manual retry (opsional, bisa dipanggil dari luar)
   Future<void> retry() async {
     await _initializeVideo();
   }

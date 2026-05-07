@@ -1,10 +1,17 @@
+// lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/anime_model.dart';
-import '../config/theme/app_theme.dart';
-import 'detail_screen.dart';
-import 'search_screen.dart';
+import '../../models/anime_model.dart';
+import '../../config/theme/app_theme.dart';
+import '../detail_screen.dart';
+import '../search_screen.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import 'widgets/anime_grid_card.dart';
+import 'widgets/pagination_controls.dart';
+import 'widgets/section_header.dart';
+import 'widgets/home_views.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> genres = [];
   String selectedDay = 'Senin';
   Map<String, dynamic>? selectedGenre;
+
+  final TextEditingController _searchEntryController =
+      TextEditingController();
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -81,6 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchGenres();
   }
 
+  @override
+  void dispose() {
+    _searchEntryController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadWatchHistory() async {
     await Future.delayed(const Duration(milliseconds: 200));
     if (mounted) {
@@ -121,9 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'] ?? [];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
+        final List<AnimeModel> fetched =
+            dataList.map((item) => AnimeModel.fromJson(item)).toList();
         if (mounted) {
           setState(() {
             latestAnimeList = fetched;
@@ -166,7 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
           isLoading = false;
         });
         return;
-      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
+      } else if (selectedFilter == 'Riwayat' ||
+          selectedFilter == 'Lainnya') {
         setState(() {
           isLoading = false;
         });
@@ -177,9 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
+        final List<AnimeModel> fetched =
+            dataList.map((item) => AnimeModel.fromJson(item)).toList();
         if (mounted) {
           setState(() {
             animeList = fetched;
@@ -194,9 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -215,9 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
+        final List<AnimeModel> fetched =
+            dataList.map((item) => AnimeModel.fromJson(item)).toList();
         if (mounted) {
           setState(() {
             genreAnimeList = fetched;
@@ -232,9 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isGenreAnimeLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -337,42 +349,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchEntry() {
-    return Material(
-      color: AppColors.darkSurface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SearchScreen()),
-        ),
-        child: Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.45),
-            ),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.search_rounded, color: AppColors.lightGrey, size: 20),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Cari anime...',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SearchScreen()),
+      ),
+      child: AbsorbPointer(
+        child: CustomTextField(
+          controller: _searchEntryController,
+          hintText: 'Cari anime...',
+          prefixIcon: Icons.search_rounded,
         ),
       ),
     );
@@ -460,11 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedFilter == 'Completed Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
     }
-
     if (selectedFilter == 'Top Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Home');
     }
-
     final index = _bottomNavItems.indexWhere(
       (item) => item.filter == selectedFilter,
     );
@@ -495,6 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   //==== HOME =====
+
   Widget _buildHomeBody() {
     if (isLoading && animeList.isEmpty) {
       return const Center(
@@ -516,7 +501,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hero Banner
           if (heroList.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -536,7 +520,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => DetailScreen(malId: anime.malId),
+                            builder: (_) =>
+                                DetailScreen(malId: anime.malId),
                           ),
                         ),
                         child: Stack(
@@ -545,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Image.network(
                               anime.imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => Container(
+                              errorBuilder: (_, __, ___) => Container(
                                 color: AppColors.darkSurface,
                                 child: const Icon(
                                   Icons.broken_image,
@@ -570,7 +555,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               left: 16,
                               right: 16,
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     anime.title,
@@ -606,11 +592,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          // Recent Watch History
           if (watchHistory.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: Text('Tontonan Terakhir', style: AppTextStyles.heading4),
+              child: Text(
+                'Tontonan Terakhir',
+                style: AppTextStyles.heading4,
+              ),
             ),
             SizedBox(
               height: 130,
@@ -630,13 +618,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
 
-          _buildPreviewSection(
+          HomeViews.buildPreviewSection(
+            context: context,
             title: 'Top Anime',
             animeList: animeList.take(6).toList(),
             isLoading: isLoading,
             onSeeAll: () => _changeFilter('Top Anime'),
           ),
-          _buildPreviewSection(
+          HomeViews.buildPreviewSection(
+            context: context,
             title: 'Update Terbaru',
             animeList: latestAnimeList.take(6).toList(),
             isLoading: isLatestLoading,
@@ -648,10 +638,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  //==== JADWAL RILIS =====
+  //==== TOP ANIME =====
 
   Widget _buildTopAnimeBody() {
-    return _buildScrollableGridSection(animeList, isLoading);
+    return HomeViews.buildScrollableGridSection(
+      context: context,
+      animeList: animeList,
+      isLoading: isLoading,
+      currentPage: currentPage,
+      onPrevPage: currentPage == 1 ? null : _prevPage,
+      onNextPage: _nextPage,
+    );
   }
 
   //==== JADWAL RILIS =====
@@ -660,12 +657,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sub-filter Hari
         SizedBox(
           height: 48,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             itemCount: _days.length,
             itemBuilder: (context, index) {
               final day = _days[index]['label']!;
@@ -681,14 +678,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.divider,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.divider,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(
                       child: Text(
                         day,
                         style: TextStyle(
-                          color: isSelected ? AppColors.dark : AppColors.white,
+                          color: isSelected
+                              ? AppColors.dark
+                              : AppColors.white,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -702,18 +703,42 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        Expanded(child: _buildScrollableGridSection(animeList, isLoading)),
+        Expanded(
+          child: HomeViews.buildScrollableGridSection(
+            context: context,
+            animeList: animeList,
+            isLoading: isLoading,
+            currentPage: currentPage,
+            onPrevPage: currentPage == 1 ? null : _prevPage,
+            onNextPage: _nextPage,
+          ),
+        ),
       ],
     );
   }
 
   //==== ON-GOING =====
+
   Widget _buildOngoingBody() {
-    return _buildScrollableGridSection(animeList, isLoading);
+    return HomeViews.buildScrollableGridSection(
+      context: context,
+      animeList: animeList,
+      isLoading: isLoading,
+      currentPage: currentPage,
+      onPrevPage: currentPage == 1 ? null : _prevPage,
+      onNextPage: _nextPage,
+    );
   }
 
   Widget _buildCompletedBody() {
-    return _buildScrollableGridSection(animeList, isLoading);
+    return HomeViews.buildScrollableGridSection(
+      context: context,
+      animeList: animeList,
+      isLoading: isLoading,
+      currentPage: currentPage,
+      onPrevPage: currentPage == 1 ? null : _prevPage,
+      onNextPage: _nextPage,
+    );
   }
 
   //==== RIWAYAT =====
@@ -810,7 +835,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.lightGrey),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.lightGrey,
+            ),
           ],
         ),
       ),
@@ -824,7 +852,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Genre Chips Wrap
           if (genres.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -839,7 +866,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: genres.map((genre) {
-                  final isSelected = selectedGenre?['id'] == genre['id'];
+                  final isSelected =
+                      selectedGenre?['id'] == genre['id'];
                   return GestureDetector(
                     onTap: () => _selectGenre(genre),
                     child: AnimatedContainer(
@@ -878,7 +906,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-          // Genre Anime Results
           if (selectedGenre != null) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
@@ -909,252 +936,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else ...[
-              _buildAnimeGrid(genreAnimeList),
-              _buildPaginationControls(),
+              HomeViews.buildAnimeGrid(
+                context: context,
+                animeList: genreAnimeList,
+              ),
+              PaginationControls(
+                currentPage: currentPage,
+                onPrevPage: currentPage == 1 ? null : _prevPage,
+                onNextPage: _nextPage,
+              ),
             ],
           ],
           const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  //==== SHARED WIDGETS =====
-
-  Widget _buildPreviewSection({
-    required String title,
-    required List<AnimeModel> animeList,
-    required bool isLoading,
-    required VoidCallback onSeeAll,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(title: title, onSeeAll: onSeeAll),
-        if (isLoading && animeList.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-          )
-        else if (animeList.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-            child: Text(
-              'No data',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          )
-        else
-          _buildAnimeGrid(animeList),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader({
-    required String title,
-    required VoidCallback onSeeAll,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(title, style: AppTextStyles.heading4)),
-          TextButton(
-            onPressed: onSeeAll,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text(
-              'Lihat Selengkapnya',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScrollableGridSection(List<AnimeModel> list, bool loading) {
-    if (loading && list.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-    if (list.isEmpty && !loading) {
-      return const Center(
-        child: Text(
-          'No data',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildAnimeGrid(list),
-          _buildPaginationControls(),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimeGrid(List<AnimeModel> list) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        childAspectRatio: 0.6,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        return _buildAnimeCard(list[index]);
-      },
-    );
-  }
-
-  Widget _buildAnimeCard(AnimeModel anime) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => DetailScreen(malId: anime.malId)),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.darkSurface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image — gunakan Expanded agar responsif
-            Expanded(
-              flex: 7,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: Image.network(
-                  anime.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    color: AppColors.darkSurface,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ),
-                  loadingBuilder: (_, child, progress) {
-                    if (progress == null) return child;
-                    return Container(
-                      color: AppColors.darkSurface,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.warning,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            // Info — gunakan Expanded agar tidak overflow
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelMedium,
-                    ),
-                    if (anime.score != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.warning,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            anime.score!.toStringAsFixed(1),
-                            style: AppTextStyles.caption,
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaginationControls() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: currentPage == 1 ? null : _prevPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.darkSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: const Text(
-              'Previous',
-              style: TextStyle(color: AppColors.white),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary, width: 1),
-            ),
-            child: Text('Page $currentPage', style: AppTextStyles.labelLarge),
-          ),
-          const SizedBox(width: 16),
-          ElevatedButton(
-            onPressed: _nextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: const Text('Next', style: TextStyle(color: AppColors.white)),
-          ),
         ],
       ),
     );
