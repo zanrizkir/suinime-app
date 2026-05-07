@@ -416,7 +416,14 @@ class _DetailScreenState extends State<DetailScreen> {
                             const SizedBox(height: 6),
                             _statusBadge(status),
                             const SizedBox(height: 10),
-                            _buildFavoriteButton(context),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(child: _buildFavoriteButton(context)),
+                                const SizedBox(width: 8),
+                                _buildMoreButton(context),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -792,4 +799,240 @@ class _DetailScreenState extends State<DetailScreen> {
       },
     );
   }
+
+  void _showChangeCategoryDialog(
+    BuildContext context,
+    LibraryNotifier library,
+  ) {
+    final allCategories = library.categories;
+    final currentCategories = library.getCategoriesForAnime(widget.malId);
+    final currentCategoryIds =
+        currentCategories.map((c) => c.id).toSet();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        title: const Text(
+          'Pilih Kategori',
+          style: TextStyle(
+            color: AppColors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: allCategories.map((category) {
+              final isSelected = currentCategoryIds.contains(category.id);
+              return CheckboxListTile(
+                tileColor: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : null,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                title: Text(
+                  category.name,
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+                value: isSelected,
+                onChanged: (value) {
+                  if (value == true && !isSelected) {
+                    final info = detailData.isNotEmpty
+                        ? detailData
+                        : (widget.animeInfo ?? {});
+                    final String catTitle =
+                        info['title']?.toString() ?? 'Unknown Title';
+                    final String catImageUrl =
+                        info['imageUrl']?.toString() ?? '';
+                    final double? catScore = info['score'] != null
+                        ? double.tryParse(info['score'].toString())
+                        : null;
+
+                    library.addAnimeToCategory(
+                      malId: widget.malId,
+                      title: catTitle,
+                      imageUrl: catImageUrl,
+                      score: catScore,
+                      categoryId: category.name,
+                    );
+                  } else if (value == false && isSelected) {
+                    library.removeAnimeFromCategory(
+                      widget.malId,
+                      category.id,
+                    );
+                  }
+                  setState(() {});
+                },
+                activeColor: AppColors.primary,
+                checkColor: AppColors.white,
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Selesai',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreButton(BuildContext context) {
+    return Consumer<LibraryNotifier>(
+      builder: (context, library, _) {
+        return PopupMenuButton(
+          icon: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                width: 1.2,
+              ),
+            ),
+            child: const Icon(
+              Icons.more_vert,
+              color: AppColors.primary,
+              size: 16,
+            ),
+          ),
+          color: AppColors.darkSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          itemBuilder: (context) => _buildCategoryMenuItems(context, library),
+        );
+      },
+    );
+  }
+
+  List<PopupMenuEntry<String>> _buildCategoryMenuItems(
+    BuildContext context,
+    LibraryNotifier library,
+  ) {
+    final info = detailData.isNotEmpty ? detailData : (widget.animeInfo ?? {});
+    final String title = info['title']?.toString() ?? 'Unknown Title';
+    final String imageUrl = info['imageUrl']?.toString() ?? '';
+    final double? score = info['score'] != null
+        ? double.tryParse(info['score'].toString())
+        : null;
+
+    final isInLibrary = library.animeExistsInLibrary(widget.malId);
+    final categoriesWithAnime =
+        library.getCategoriesForAnime(widget.malId);
+
+    if (!isInLibrary) {
+      return [
+        PopupMenuItem(
+          child: const Row(
+            children: [
+              Icon(
+                Icons.add_to_photos,
+                color: AppColors.primary,
+                size: 18,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Tambahkan ke pustaka',
+                style: TextStyle(color: AppColors.white),
+              ),
+            ],
+          ),
+          onTap: () {
+            library.addToFavorites(
+              malId: widget.malId,
+              title: title,
+              imageUrl: imageUrl,
+              score: score,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ditambahkan ke Favorit'),
+                backgroundColor: AppColors.darkSurface,
+                duration: Duration(milliseconds: 800),
+              ),
+            );
+          },
+        ),
+      ];
+    } else {
+      return [
+        PopupMenuItem(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Di kategori:',
+                style: TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ...categoriesWithAnime.map(
+                (cat) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.folder,
+                        color: AppColors.primary,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        cat.name,
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          child: const Row(
+            children: [
+              Icon(
+                Icons.edit,
+                color: AppColors.primary,
+                size: 18,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Ubah kategori',
+                style: TextStyle(color: AppColors.white),
+              ),
+            ],
+          ),
+          onTap: () {
+            _showChangeCategoryDialog(context, library);
+          },
+        ),
+      ];
+    }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../category_management_screen.dart';
 
 class MoreTab extends StatefulWidget {
   final VoidCallback onGenreTap;
@@ -39,6 +40,20 @@ class _MoreTabState extends State<MoreTab> {
           title: 'Completed Anime',
           subtitle: 'Daftar anime yang sudah selesai',
           onTap: widget.onCompletedTap,
+        ),
+        const SizedBox(height: 10),
+        _buildMoreMenuTile(
+          icon: Icons.folder_outlined,
+          title: 'Kategori',
+          subtitle: 'Kelola kategori pustaka anime',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CategoryManagementScreen(),
+              ),
+            );
+          },
         ),
       ],
     );

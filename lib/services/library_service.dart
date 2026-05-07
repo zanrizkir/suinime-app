@@ -166,4 +166,85 @@ class LibraryNotifier extends ChangeNotifier {
     _initializeDefaultCategory();
     notifyListeners();
   }
+
+  /// Get categories that contain this anime
+  List<LibraryCategory> getCategoriesForAnime(int malId) {
+    return _categories.values
+        .where((cat) => cat.items.any((item) => item.malId == malId))
+        .toList();
+  }
+
+  /// Check if anime exists in any category (other than just in library)
+  bool animeExistsInLibrary(int malId) {
+    return getCategoriesForAnime(malId).isNotEmpty;
+  }
+
+  /// Rename category
+  bool renameCategory(String oldCategoryId, String newName) {
+    String oldId = oldCategoryId.toLowerCase();
+    final category = _categories[oldId];
+
+    if (category == null) return false;
+    if (oldId == 'favorit') return false; // Can't rename Favorit
+
+    String newId = newName.toLowerCase();
+    if (_categories.containsKey(newId)) return false; // New name already exists
+
+    final renamedCategory = category.copyWith(name: newName, id: newId);
+    _categories.remove(oldId);
+    _categories[newId] = renamedCategory;
+
+    notifyListeners();
+    return true;
+  }
+
+  /// Move anime from one category to another
+  void moveAnimeToCategory({
+    required int malId,
+    required String fromCategoryId,
+    required String toCategoryId,
+  }) {
+    // Get anime from source category
+    String fromId = fromCategoryId.toLowerCase();
+    final fromCategory = _categories[fromId];
+    if (fromCategory == null) return;
+
+    LibraryItem? animeItem;
+    for (final item in fromCategory.items) {
+      if (item.malId == malId) {
+        animeItem = item;
+        break;
+      }
+    }
+    if (animeItem == null) return;
+
+    // Remove from source
+    removeAnimeFromCategory(malId, fromCategoryId);
+
+    // Add to destination
+    addAnimeToCategory(
+      malId: animeItem.malId,
+      title: animeItem.title,
+      imageUrl: animeItem.imageUrl,
+      score: animeItem.score,
+      categoryId: toCategoryId,
+    );
+  }
+
+  /// Reorder categories (maintain order in a list)
+  void reorderCategories(List<LibraryCategory> newOrder) {
+    final tempMap = <String, LibraryCategory>{};
+    for (final cat in newOrder) {
+      tempMap[cat.id] = cat;
+    }
+    // Add any missing categories (shouldn't happen)
+    for (final entry in _categories.entries) {
+      if (!tempMap.containsKey(entry.key)) {
+        tempMap[entry.key] = entry.value;
+      }
+    }
+    _categories.clear();
+    _categories.addAll(tempMap);
+    notifyListeners();
+  }
 }
