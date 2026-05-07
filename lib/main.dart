@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'config/theme/app_theme.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/detail_screen.dart';
 import 'screens/player_screen.dart';
 import 'services/api_service.dart';
+import 'services/library_service.dart';
 
 void main() {
   runApp(const SuinimeApp());
@@ -15,21 +17,24 @@ class SuinimeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Suinime',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.darkBg,
-        fontFamily: 'Roboto',
-      ),
-      home: const HomeScreen(),
-      routes: {
-        '/detail': (context) => DetailScreen(
-          malId: ModalRoute.of(context)?.settings.arguments as int,
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => LibraryNotifier())],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Suinime',
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: AppColors.darkBg,
+          fontFamily: 'Roboto',
         ),
-        '/player': (context) => const PlayerScreen(),
-      },
+        home: const HomeScreen(),
+        routes: {
+          '/detail': (context) => DetailScreen(
+            malId: ModalRoute.of(context)?.settings.arguments as int,
+          ),
+          '/player': (context) => const PlayerScreen(),
+        },
+      ),
     );
   }
 }
