@@ -300,33 +300,68 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkBg,
-      appBar: _buildHomeAppBar(),
+      appBar: _buildAppBar(),
       body: _buildBody(),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  PreferredSizeWidget _buildHomeAppBar() {
+  PreferredSizeWidget _buildAppBar() {
+    final activeIndex = _activeBottomNavIndex;
+    final showDashboardHeader = activeIndex == 0;
+
     return AppBar(
       toolbarHeight: 72,
       backgroundColor: AppColors.darkBg,
       elevation: 0,
       centerTitle: false,
       titleSpacing: 16,
-      title: Row(
-        children: [
-          const Text(
-            'Suinime',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.white,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(child: _buildSearchEntry()),
-        ],
+      title: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeOut,
+        child: showDashboardHeader
+            ? Row(
+                key: const ValueKey('dashboard-header'),
+                children: [
+                  const Text(
+                    'Suinime',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildSearchEntry()),
+                ],
+              )
+            : Text(
+                _headerTitleForIndex(activeIndex),
+                key: ValueKey('tab-header-$activeIndex'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.heading3.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
       ),
     );
+  }
+
+  String _headerTitleForIndex(int index) {
+    switch (index) {
+      case 1:
+        return 'Jadwal Rilis';
+      case 2:
+        return 'Pustaka';
+      case 3:
+        return 'Riwayat';
+      case 4:
+        return 'Lainnya';
+      case 0:
+      default:
+        return 'Suinime';
+    }
   }
 
   Widget _buildSearchEntry() {

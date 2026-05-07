@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../widgets/home_views.dart';
-import '../widgets/pagination_controls.dart';
 
 class ScheduleTab extends StatefulWidget {
   const ScheduleTab({super.key});

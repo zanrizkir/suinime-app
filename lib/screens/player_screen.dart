@@ -64,7 +64,6 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   late VideoPlayerController _videoController;
   bool _isControlsVisible = true;
-  late Duration _controlsAutoHideTimer;
 
   @override
   void initState() {
