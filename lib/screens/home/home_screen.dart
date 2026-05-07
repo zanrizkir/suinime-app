@@ -9,6 +9,7 @@ import '../../widgets/custom_text_field.dart';
 import 'widgets/pagination_controls.dart';
 import 'widgets/home_views.dart';
 import 'tabs/dashboard_tab.dart';
+import 'tabs/library_tab.dart';
 import 'tabs/more_tab.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     _BottomNavItem(
       label: 'Pustaka',
-      filter: 'Genre List',
+      filter: 'Pustaka',
       icon: Icons.video_library_outlined,
       activeIcon: Icons.video_library_rounded,
     ),
@@ -111,6 +112,12 @@ class _HomeScreenState extends State<HomeScreen> {
             genres = genreList
                 .map((g) => {'id': g['mal_id'], 'name': g['name']})
                 .toList();
+            genres.sort(
+              (a, b) => a['name']
+                  .toString()
+                  .toLowerCase()
+                  .compareTo(b['name'].toString().toLowerCase()),
+            );
           });
         }
       }
@@ -135,7 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
           orElse: () => {'label': 'Senin', 'api': 'monday'},
         )['api']!;
         url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
-      } else if (selectedFilter == 'Genre List') {
+      } else if (selectedFilter == 'Pustaka' ||
+          selectedFilter == 'Genre List') {
         setState(() {
           isLoading = false;
         });
@@ -418,6 +426,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (selectedFilter == 'Completed Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
     }
+    if (selectedFilter == 'Genre List') {
+      return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
+    }
     if (selectedFilter == 'Top Anime' || selectedFilter == 'On-going Anime') {
       return _bottomNavItems.indexWhere((item) => item.filter == 'Home');
     }
@@ -447,6 +458,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       case 'Completed Anime':
         return _buildCompletedBody();
+      case 'Pustaka':
+        return const LibraryTab();
       case 'Genre List':
         return _buildGenreBody();
       case 'Riwayat':
@@ -576,7 +589,10 @@ class _HomeScreenState extends State<HomeScreen> {
   //==== LAINNYA =====
 
   Widget _buildMoreBody() {
-    return MoreTab(onCompletedTap: () => _changeFilter('Completed Anime'));
+    return MoreTab(
+      onGenreTap: () => _changeFilter('Genre List'),
+      onCompletedTap: () => _changeFilter('Completed Anime'),
+    );
   }
 
   //==== GENRE LIST =====
@@ -594,49 +610,66 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             )
           else
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: genres.map((genre) {
-                  final isSelected = selectedGenre?['id'] == genre['id'];
-                  return GestureDetector(
-                    onTap: () => _selectGenre(genre),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.darkSurface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const spacing = 8.0;
+                final columns = (constraints.maxWidth / 132)
+                    .floor()
+                    .clamp(2, 4)
+                    .toInt();
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(12),
+                  itemCount: genres.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    mainAxisExtent: 40,
+                  ),
+                  itemBuilder: (context, index) {
+                    final genre = genres[index];
+                    final isSelected = selectedGenre?['id'] == genre['id'];
+                    return GestureDetector(
+                      onTap: () => _selectGenre(genre),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary
-                              : AppColors.border.withValues(alpha: 0.5),
-                          width: 1,
+                              : AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.border.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          genre['name'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.dark
+                                : AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
                         ),
                       ),
-                      child: Text(
-                        genre['name'],
-                        style: TextStyle(
-                          color: isSelected
-                              ? AppColors.dark
-                              : AppColors.textSecondary,
-                          fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                    );
+                  },
+                );
+              },
             ),
 
           if (selectedGenre != null) ...[
