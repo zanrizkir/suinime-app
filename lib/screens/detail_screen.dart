@@ -806,8 +806,7 @@ class _DetailScreenState extends State<DetailScreen> {
   ) {
     final allCategories = library.categories;
     final currentCategories = library.getCategoriesForAnime(widget.malId);
-    final currentCategoryIds =
-        currentCategories.map((c) => c.id).toSet();
+    final currentCategoryIds = currentCategories.map((c) => c.id).toSet();
 
     showDialog(
       context: context,
@@ -819,10 +818,7 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
         title: const Text(
           'Pilih Kategori',
-          style: TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -840,8 +836,9 @@ class _DetailScreenState extends State<DetailScreen> {
                   category.name,
                   style: TextStyle(
                     color: AppColors.white,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
                 value: isSelected,
@@ -866,10 +863,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       categoryId: category.name,
                     );
                   } else if (value == false && isSelected) {
-                    library.removeAnimeFromCategory(
-                      widget.malId,
-                      category.id,
-                    );
+                    library.removeAnimeFromCategory(widget.malId, category.id);
                   }
                   setState(() {});
                 },
@@ -935,19 +929,14 @@ class _DetailScreenState extends State<DetailScreen> {
         : null;
 
     final isInLibrary = library.animeExistsInLibrary(widget.malId);
-    final categoriesWithAnime =
-        library.getCategoriesForAnime(widget.malId);
+    final categoriesWithAnime = library.getCategoriesForAnime(widget.malId);
 
     if (!isInLibrary) {
       return [
         PopupMenuItem(
           child: const Row(
             children: [
-              Icon(
-                Icons.add_to_photos,
-                color: AppColors.primary,
-                size: 18,
-              ),
+              Icon(Icons.add_to_photos, color: AppColors.primary, size: 18),
               SizedBox(width: 8),
               Text(
                 'Tambahkan ke pustaka',
@@ -982,10 +971,7 @@ class _DetailScreenState extends State<DetailScreen> {
             children: [
               const Text(
                 'Di kategori:',
-                style: TextStyle(
-                  color: AppColors.textTertiary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
               ),
               const SizedBox(height: 6),
               ...categoriesWithAnime.map(
@@ -1017,16 +1003,9 @@ class _DetailScreenState extends State<DetailScreen> {
         PopupMenuItem(
           child: const Row(
             children: [
-              Icon(
-                Icons.edit,
-                color: AppColors.primary,
-                size: 18,
-              ),
+              Icon(Icons.edit, color: AppColors.primary, size: 18),
               SizedBox(width: 8),
-              Text(
-                'Ubah kategori',
-                style: TextStyle(color: AppColors.white),
-              ),
+              Text('Ubah kategori', style: TextStyle(color: AppColors.white)),
             ],
           ),
           onTap: () {
@@ -1035,4 +1014,5 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
       ];
     }
+  }
 }
