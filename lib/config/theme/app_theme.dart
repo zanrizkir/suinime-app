@@ -18,6 +18,7 @@ class AppColors {
   static const Color darkBg = Color(0xFF0F0F0F); // Main app background
   static const Color darkSurface = Color(0xFF1A1A1A); // Cards, app bars
   static const Color accent = primary;
+  static const Color favorite = Color(0xFFFF173A);
 
   // Text color variants
   static const Color textPrimary = white;
