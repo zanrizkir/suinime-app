@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../models/anime_model.dart';
 import '../config/theme/app_theme.dart';
+import '../models/anime_model.dart';
+import '../services/api_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import 'detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -20,7 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _hasSearched = false;
   String? _errorMessage;
 
-  void _performSearch() async {
+  Future<void> _performSearch() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
 
@@ -33,11 +34,15 @@ class _SearchScreenState extends State<SearchScreen> {
 
     try {
       final results = await _apiService.searchAnime(query);
+      if (!mounted) return;
+
       setState(() {
         _searchResults = results;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
@@ -104,26 +109,29 @@ class _SearchScreenState extends State<SearchScreen> {
 
     if (_errorMessage != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              color: AppColors.error,
-              size: 60,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: const TextStyle(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            CustomButton(
-              text: 'Coba Lagi',
-              onPressed: _performSearch,
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: AppColors.error,
+                size: 60,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              CustomButton(
+                text: 'Coba Lagi',
+                onPressed: _performSearch,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -170,11 +178,25 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  void _openDetail(AnimeModel anime) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          malId: anime.malId,
+          animeInfo: {
+            'title': anime.title,
+            'imageUrl': anime.imageUrl,
+            'score': anime.score,
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildListCard(AnimeModel anime) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, '/detail', arguments: anime.malId);
-      },
+      onTap: () => _openDetail(anime),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -260,9 +282,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildGridCard(AnimeModel anime) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, '/detail', arguments: anime.malId);
-      },
+      onTap: () => _openDetail(anime),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.darkSurface,
@@ -295,41 +315,43 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    anime.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      anime.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (anime.score != null)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: AppColors.warning,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          anime.score!.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+                    const SizedBox(height: 4),
+                    if (anime.score != null)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: AppColors.warning,
+                            size: 16,
                           ),
-                        ),
-                      ],
-                    ),
-                ],
+                          const SizedBox(width: 4),
+                          Text(
+                            anime.score!.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
           ],

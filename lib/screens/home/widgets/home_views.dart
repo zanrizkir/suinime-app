@@ -97,14 +97,28 @@ class HomeViews {
         final anime = animeList[index];
         return AnimeGridCard(
           anime: anime,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DetailScreen(malId: anime.malId),
-            ),
-          ),
+          onTap: () => openDetail(context, anime),
         );
       },
+    );
+  }
+
+  static void openDetail(
+    BuildContext context,
+    AnimeModel anime,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          malId: anime.malId,
+          animeInfo: {
+            'title': anime.title,
+            'imageUrl': anime.imageUrl,
+            'score': anime.score,
+          },
+        ),
+      ),
     );
   }
 }

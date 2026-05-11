@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
-import '../services/consumet_service.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import '../services/otakudesu_service.dart';
 import '../config/theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
+  final String episodeSlug;
   final String animeTitle;
-  final int episodeNumber;
 
   const VideoPlayerScreen({
     super.key,
+    required this.episodeSlug,
     required this.animeTitle,
-    required this.episodeNumber,
   });
 
   @override
@@ -20,167 +19,91 @@ class VideoPlayerScreen extends StatefulWidget {
 }
 
 class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
-  late ConsumetService _consumetService;
-  VideoPlayerController? _videoPlayerController;
-  ChewieController? _chewieController;
+  final OtakudesuService _apiService = OtakudesuService();
+  WebViewController? _webViewController;
+
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  String _episodeTitle = '';
 
   @override
   void initState() {
     super.initState();
-    _consumetService = ConsumetService();
-    _initializeVideo();
+    _loadEpisodeData();
   }
 
-  Future<void> _initializeVideo() async {
+  Future<void> _loadEpisodeData() async {
     setState(() {
       _isLoading = true;
       _hasError = false;
       _errorMessage = '';
     });
 
-    try {
-      final result = await _consumetService.getStreamingLinkByTitleAndEpisode(
-        widget.animeTitle,
-        widget.episodeNumber,
-      );
+    final result =
+        await _apiService.fetchEpisodeStream(widget.episodeSlug);
 
-      if (result['success'] && result['videoSources'] != null) {
-        final videoSources =
-            result['videoSources'] as List<Map<String, dynamic>>;
+    if (result['success'] == true) {
+      final streamUrl = result['streamUrl'] as String;
 
-        if (videoSources.isNotEmpty) {
-          final bestQualitySource = videoSources.first;
-          final videoUrl = bestQualitySource['url'] as String;
-
-          final controller = VideoPlayerController.networkUrl(
-            Uri.parse(videoUrl),
-          );
-
-          try {
-            await controller.initialize();
-
-            if (!mounted) {
-              await controller.dispose();
-              return;
-            }
-
-            _chewieController = ChewieController(
-              videoPlayerController: controller,
-              autoPlay: true,
-              looping: false,
-              aspectRatio: 16 / 9,
-              fullScreenByDefault: false,
-              allowFullScreen: true,
-              allowMuting: true,
-              allowPlaybackSpeedChanging: true,
-              showControls: true,
-              showControlsOnInitialize: true,
-              errorBuilder: (context, errorMessage) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Gagal memuat video',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        errorMessage,
-                        style: const TextStyle(
-                          color: AppColors.textTertiary,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-
-            _videoPlayerController = controller;
-
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          } catch (e) {
-            await controller.dispose();
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-                _errorMessage = 'Gagal menginisialisasi video player: $e';
-              });
-            }
-          }
-        } else {
-          throw Exception('Tidak ada sumber video yang tersedia');
-        }
-      } else {
-        throw Exception(
-            result['error'] ?? 'Gagal mendapatkan link streaming');
+      if (mounted) {
+        setState(() {
+          _episodeTitle = result['title']?.toString() ?? widget.animeTitle;
+          _initializeWebView(streamUrl);
+          _isLoading = false;
+        });
       }
-    } catch (e) {
+    } else {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = e.toString();
+          _errorMessage =
+              result['error']?.toString() ?? 'Terjadi kesalahan sistem';
         });
       }
     }
   }
 
-  @override
-  void dispose() {
-    _chewieController?.dispose();
-    _videoPlayerController?.dispose();
-    super.dispose();
+  void _initializeWebView(String url) {
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(AppColors.dark)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) {},
+          onPageFinished: (_) {
+            _webViewController?.runJavaScript(
+              "document.body.style.margin='0';"
+              "document.body.style.padding='0';"
+              "document.body.style.backgroundColor='black';",
+            );
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(url));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.dark,
-      appBar: _buildAppBar(),
+      appBar: AppBar(
+        title: Text(
+          _episodeTitle.isEmpty ? widget.animeTitle : _episodeTitle,
+          style:
+              const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: AppColors.dark,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: _buildBody(),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.animeTitle,
-            style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            'Episode ${widget.episodeNumber}',
-            style: const TextStyle(
-                fontSize: 12, fontWeight: FontWeight.normal),
-          ),
-        ],
-      ),
-      backgroundColor: AppColors.dark,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
     );
   }
 
@@ -190,13 +113,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
+            CircularProgressIndicator(color: AppColors.primary),
             SizedBox(height: 16),
             Text(
-              'Memuat video...',
+              'Menyiapkan pemutar video...',
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
@@ -235,7 +155,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               CustomButton(
                 text: 'Coba Lagi',
                 icon: Icons.refresh,
-                onPressed: _initializeVideo,
+                onPressed: _loadEpisodeData,
               ),
             ],
           ),
@@ -243,19 +163,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       );
     }
 
-    if (_chewieController != null && _videoPlayerController != null) {
-      return Chewie(controller: _chewieController!);
+    if (_webViewController != null) {
+      return Column(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: WebViewWidget(controller: _webViewController!),
+          ),
+          const Expanded(
+            child: Center(
+              child: Text(
+                'Gunakan tombol fullscreen pada pemutar video',
+                style: TextStyle(
+                  color: AppColors.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
     }
 
-    return const Center(
-      child: Text(
-        'Tidak dapat memuat player',
-        style: TextStyle(color: AppColors.white),
-      ),
-    );
-  }
-
-  Future<void> retry() async {
-    await _initializeVideo();
+    return const SizedBox.shrink();
   }
 }
