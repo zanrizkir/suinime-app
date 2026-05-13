@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class OtakudesuService {
-  final String baseUrl = 'https://eafd-2404-c0-a701-1c2a-9c70-cf3d-7c1e-c649.ngrok-free.app'; 
+  final String baseUrl = 'https://gala-seminar-seismic.ngrok-free.dev';
 
   final Map<String, String> _headers = {
     'ngrok-skip-browser-warning': 'true',
@@ -54,7 +54,7 @@ class OtakudesuService {
         Uri.parse('$baseUrl/v1/episode/$episodeSlug'),
         headers: _headers,
       );
-      
+
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (json['status'] == 'Ok') {
