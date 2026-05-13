@@ -2,16 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../category_management_screen.dart';
 import '../../data_storage_screen.dart';
+import '../../genre_list_screen.dart';
+import '../../completed_anime_screen.dart';
 
 class MoreTab extends StatefulWidget {
-  final VoidCallback onGenreTap;
-  final VoidCallback onCompletedTap;
-
-  const MoreTab({
-    super.key,
-    required this.onGenreTap,
-    required this.onCompletedTap,
-  });
+  const MoreTab({super.key});
 
   @override
   State<MoreTab> createState() => _MoreTabState();
@@ -23,8 +18,6 @@ class _MoreTabState extends State<MoreTab> {
     return _buildMoreBody();
   }
 
-  //==== LAINNYA =====
-
   Widget _buildMoreBody() {
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -33,14 +26,24 @@ class _MoreTabState extends State<MoreTab> {
           icon: Icons.category_outlined,
           title: 'Genre List',
           subtitle: 'Jelajahi anime berdasarkan genre',
-          onTap: widget.onGenreTap,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GenreListScreen()),
+            );
+          },
         ),
         const SizedBox(height: 10),
         _buildMoreMenuTile(
           icon: Icons.check_circle_outline_rounded,
           title: 'Completed Anime',
           subtitle: 'Daftar anime yang sudah selesai',
-          onTap: widget.onCompletedTap,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CompletedAnimeScreen()),
+            );
+          },
         ),
         const SizedBox(height: 10),
         _buildMoreMenuTile(
