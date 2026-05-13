@@ -203,11 +203,6 @@ class LibraryNotifier extends ChangeNotifier {
   Future<void> deleteCategory(String categoryId) async {
     String catId = categoryId.toLowerCase();
 
-    // Don't allow deleting Favorit category
-    if (catId == 'favorit') {
-      return;
-    }
-
     _categories.remove(catId);
 
     // Delete from Hive
@@ -264,12 +259,12 @@ class LibraryNotifier extends ChangeNotifier {
     final category = _categories[oldId];
 
     if (category == null) return false;
-    if (oldId == 'favorit') return false; // Can't rename Favorit
 
     String newId = newName.toLowerCase();
     if (_categories.containsKey(newId)) return false; // New name already exists
 
     final renamedCategory = category.copyWith(name: newName, id: newId);
+    final items = HiveService.getLibraryItemsByCategory(oldId);
     _categories.remove(oldId);
     _categories[newId] = renamedCategory;
 
@@ -278,7 +273,6 @@ class LibraryNotifier extends ChangeNotifier {
     await HiveService.addCategory(categoryId: newId, categoryName: newName);
 
     // Migrate all items to new category
-    final items = HiveService.getLibraryItemsByCategory(oldId);
     for (final item in items) {
       await HiveService.addToLibrary(
         malId: item.malId,

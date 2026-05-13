@@ -53,6 +53,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             children: [
               Expanded(
                 child: ReorderableListView(
+                  buildDefaultDragHandles: false,
                   onReorder: (oldIndex, newIndex) {
                     setState(() {
                       if (oldIndex < newIndex) {
@@ -76,16 +77,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       _buildCategoryTile(
                         key: ValueKey(categories[i].id),
                         context: context,
+                        index: i,
                         category: categories[i],
                         library: library,
-                        isProtected:
-                            categories[i].id.toLowerCase() == 'favorit',
                       ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
+              SafeArea(
+                top: false,
+                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -173,9 +174,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   Widget _buildCategoryTile({
     required Key key,
     required BuildContext context,
+    required int index,
     required LibraryCategory category,
     required LibraryNotifier library,
-    required bool isProtected,
   }) {
     return Container(
       key: key,
@@ -186,7 +187,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: ListTile(
-        leading: Icon(Icons.drag_handle, color: AppColors.textTertiary),
+        leading: ReorderableDragStartListener(
+          index: index,
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Icon(Icons.drag_handle, color: AppColors.textTertiary),
+            ),
+          ),
+        ),
         title: Text(
           category.name,
           style: const TextStyle(
@@ -198,49 +208,33 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           '${category.items.length} item${category.items.length != 1 ? 's' : ''}',
           style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
         ),
-        trailing: isProtected
-            ? Tooltip(
-                message: 'Kategori default',
-                child: Icon(
-                  Icons.lock_outline,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              )
-            : PopupMenuButton(
-                color: AppColors.darkSurface,
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    child: const Row(
-                      children: [
-                        Icon(Icons.edit, color: AppColors.primary, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Ubah Nama',
-                          style: TextStyle(color: AppColors.white),
-                        ),
-                      ],
-                    ),
-                    onTap: () =>
-                        _showRenameCategoryDialog(context, category, library),
-                  ),
-                  PopupMenuItem(
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: AppColors.error,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Hapus', style: TextStyle(color: AppColors.error)),
-                      ],
-                    ),
-                    onTap: () =>
-                        _showDeleteCategoryDialog(context, category, library),
-                  ),
+        trailing: PopupMenuButton(
+          color: AppColors.darkSurface,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              child: const Row(
+                children: [
+                  Icon(Icons.edit, color: AppColors.primary, size: 18),
+                  SizedBox(width: 8),
+                  Text('Ubah Nama', style: TextStyle(color: AppColors.white)),
                 ],
               ),
+              onTap: () =>
+                  _showRenameCategoryDialog(context, category, library),
+            ),
+            PopupMenuItem(
+              child: const Row(
+                children: [
+                  Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+                  SizedBox(width: 8),
+                  Text('Hapus', style: TextStyle(color: AppColors.error)),
+                ],
+              ),
+              onTap: () =>
+                  _showDeleteCategoryDialog(context, category, library),
+            ),
+          ],
+        ),
       ),
     );
   }
