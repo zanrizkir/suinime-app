@@ -36,12 +36,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icon/suinime_icon.jpg
+    - assets/icon/suinime_icon.png
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/icon/suinime_icon.jpg
+  image_path: assets/icon/suinime_icon.png
   adaptive_icon_background: "#0F0F0F"
-  adaptive_icon_foreground: assets/icon/suinime_icon.jpg
+  adaptive_icon_foreground: assets/icon/suinime_icon.png
   remove_alpha_ios: true
