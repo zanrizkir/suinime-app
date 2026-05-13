@@ -284,29 +284,33 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
-                if (library.createCategory(name)) {
+                if (await library.createCategory(name)) {
                   setState(() {
                     _categoryOrder.add(name.toLowerCase());
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Kategori "$name" dibuat'),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(milliseconds: 1000),
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Kategori "$name" dibuat'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Kategori sudah ada'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(milliseconds: 800),
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Kategori sudah ada'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(milliseconds: 800),
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -365,32 +369,36 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final newName = controller.text.trim();
               if (newName.isNotEmpty && newName != category.name) {
-                if (library.renameCategory(category.id, newName)) {
+                if (await library.renameCategory(category.id, newName)) {
                   setState(() {
                     final idx = _categoryOrder.indexOf(category.id);
                     if (idx != -1) {
                       _categoryOrder[idx] = newName.toLowerCase();
                     }
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Kategori diubah menjadi "$newName"'),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(milliseconds: 1000),
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Kategori diubah menjadi "$newName"'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nama kategori sudah ada'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(milliseconds: 800),
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nama kategori sudah ada'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(milliseconds: 800),
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -434,19 +442,21 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              library.deleteCategory(category.id);
+            onPressed: () async {
+              await library.deleteCategory(category.id);
               setState(() {
                 _categoryOrder.removeWhere((id) => id == category.id);
               });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Kategori "${category.name}" dihapus'),
-                  backgroundColor: AppColors.darkSurface,
-                  duration: const Duration(milliseconds: 1000),
-                ),
-              );
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Kategori "${category.name}" dihapus'),
+                    backgroundColor: AppColors.darkSurface,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
+                );
+              }
             },
             child: const Text(
               'Hapus',

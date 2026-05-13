@@ -374,23 +374,27 @@ class _LibraryTabState extends State<LibraryTab> {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final categoryName = controller.text.trim();
               if (categoryName.isNotEmpty) {
-                final success = library.createCategory(categoryName);
+                final success = await library.createCategory(categoryName);
                 if (success) {
                   setState(() {
                     _selectedCategoryId = categoryName.toLowerCase();
                   });
-                  Navigator.pop(context);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Kategori sudah ada'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(milliseconds: 800),
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Kategori sudah ada'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(milliseconds: 800),
+                      ),
+                    );
+                  }
                 }
               }
             },
