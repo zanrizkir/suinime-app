@@ -49,6 +49,13 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             return _buildEmptyState(context, library);
           }
 
+          final mediaQuery = MediaQuery.of(context);
+          final systemBottomInset = [
+            mediaQuery.padding.bottom,
+            mediaQuery.viewPadding.bottom,
+            mediaQuery.systemGestureInsets.bottom,
+          ].reduce((value, element) => value > element ? value : element);
+
           return Column(
             children: [
               Expanded(
@@ -86,7 +93,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               ),
               SafeArea(
                 top: false,
-                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                minimum: EdgeInsets.fromLTRB(16, 8, 16, systemBottomInset + 16),
                 child: SizedBox(
                   width: double.infinity,
                   height: 52,
