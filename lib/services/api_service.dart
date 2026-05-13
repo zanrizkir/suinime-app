@@ -65,6 +65,90 @@ class ApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchAnimeGenres() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/genres/anime'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> genreList = jsonData['data'] ?? [];
+
+        return genreList
+            .map<Map<String, dynamic>>(
+              (genre) => {
+                'id': genre['mal_id'],
+                'name': genre['name'],
+              },
+            )
+            .toList()
+          ..sort(
+            (a, b) => a['name']
+                .toString()
+                .toLowerCase()
+                .compareTo(b['name'].toString().toLowerCase()),
+          );
+      } else {
+        throw Exception('Gagal mengambil genre. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Kesalahan pada fetchAnimeGenres: $e');
+      throw Exception('Gagal memuat daftar genre: $e');
+    }
+  }
+
+  Future<List<AnimeModel>> fetchAnimeByGenre(
+    int genreId, {
+    int page = 1,
+  }) async {
+    if (genreId <= 0) {
+      throw Exception('ID genre tidak valid');
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/anime?genres=$genreId&page=$page&order_by=score&sort=desc'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> dataList = jsonData['data'] ?? [];
+
+        return dataList
+            .map((item) => AnimeModel.fromJson(item))
+            .toList();
+      } else {
+        throw Exception('Gagal mengambil anime genre. Status Code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Kesalahan pada fetchAnimeByGenre: $e');
+      throw Exception('Gagal memuat anime berdasarkan genre: $e');
+    }
+  }
+
+  Future<List<AnimeModel>> getCompletedAnime({int page = 1}) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/anime?status=complete&page=$page&order_by=score&sort=desc',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> dataList = jsonData['data'] ?? [];
+
+        return dataList.map((item) => AnimeModel.fromJson(item)).toList();
+      } else {
+        throw Exception(
+          'Gagal mengambil completed anime. Status Code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Kesalahan pada getCompletedAnime: $e');
+      return [];
+    }
+  }
+
   // Fungsi Detail Anime
   Future<AnimeDetailModel> fetchAnimeDetail(int malId) async {
     if (malId <= 0) {

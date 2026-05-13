@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
-import '../../detail_screen.dart';
 import '../widgets/home_views.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -35,9 +34,28 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   void initState() {
     super.initState();
-    _fetchData();
-    _fetchLatestAnime();
+    _loadInitialData();
     _loadWatchHistory();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() {
+      isLoading = true;
+      isLatestLoading = widget.filter == 'Home';
+    });
+
+    await _fetchData(updateLoading: false, showError: false);
+
+    if (widget.filter == 'Home') {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _fetchLatestAnime(updateLoading: false);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+      isLatestLoading = false;
+    });
   }
 
   @override
@@ -61,46 +79,54 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  Future<void> _fetchLatestAnime() async {
-    setState(() {
-      isLatestLoading = true;
-    });
+  Future<void> _fetchLatestAnime({bool updateLoading = true}) async {
+    if (updateLoading) {
+      setState(() {
+        isLatestLoading = true;
+      });
+    }
 
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/top/anime?filter=airing&page=1'),
       );
+      List<AnimeModel> fetched = [];
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         final List<dynamic> dataList = jsonData['data'] ?? [];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
-        if (mounted) {
-          setState(() {
-            latestAnimeList = fetched;
-            isLatestLoading = false;
-          });
-        }
+        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
       } else {
-        throw Exception('Failed to load latest anime');
+        debugPrint('Failed to load latest anime: ${response.statusCode}');
+      }
+
+      if (mounted) {
+        setState(() {
+          latestAnimeList = fetched;
+          if (updateLoading) isLatestLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLatestLoading = false;
+          latestAnimeList = [];
+          if (updateLoading) isLatestLoading = false;
         });
         debugPrint('Error fetching latest anime: $e');
       }
     }
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({
+    bool updateLoading = true,
+    bool showError = true,
+  }) async {
     final filter = widget.filter;
 
-    setState(() {
-      isLoading = true;
-    });
+    if (updateLoading) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     try {
       String url = '';
@@ -111,30 +137,33 @@ class _DashboardTabState extends State<DashboardTab> {
         url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
       }
 
+      List<AnimeModel> fetched = [];
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
-        if (mounted && widget.filter == filter) {
-          setState(() {
-            animeList = fetched;
-            isLoading = false;
-          });
-        }
+        final List<dynamic> dataList = jsonData['data'] ?? [];
+        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
       } else {
-        throw Exception('Failed to load data');
+        debugPrint('Failed to load data: ${response.statusCode}');
+      }
+
+      if (mounted && widget.filter == filter) {
+        setState(() {
+          animeList = fetched;
+          if (updateLoading) isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted && widget.filter == filter) {
         setState(() {
-          isLoading = false;
+          animeList = [];
+          if (updateLoading) isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (showError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     }
   }
@@ -207,12 +236,7 @@ class _DashboardTabState extends State<DashboardTab> {
                     itemBuilder: (context, index) {
                       final anime = heroList[index];
                       return GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DetailScreen(malId: anime.malId),
-                          ),
-                        ),
+                        onTap: () => HomeViews.openDetail(context, anime),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../services/library_service.dart';
+import '../services/otakudesu_service.dart';
+import 'video_player_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final int malId;
@@ -20,6 +22,7 @@ class _DetailScreenState extends State<DetailScreen> {
   final String baseUrl = 'https://api.jikan.moe/v4';
 
   bool isDetailLoading = false;
+  bool _isBridgingVideo = false;
   Map<String, dynamic> detailData = {};
 
   List<Map<String, dynamic>> episodes = [];
@@ -34,8 +37,6 @@ class _DetailScreenState extends State<DetailScreen> {
     _loadDetail();
     _loadEpisodes();
   }
-
-  //==== API CALLS =====
 
   Future<void> _loadDetail() async {
     final existingSynopsis = widget.animeInfo?['synopsis']?.toString() ?? '';
@@ -192,7 +193,58 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  //==== BUILD =====
+  Future<void> _playVideo(int episodeNumber, String animeTitle) async {
+    setState(() {
+      _isBridgingVideo = true;
+    });
+
+    try {
+      final slug = await OtakudesuService().findEpisodeSlugExact(
+        animeTitle,
+        episodeNumber,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isBridgingVideo = false;
+      });
+
+      if (slug != null && slug.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VideoPlayerScreen(
+              episodeSlug: slug,
+              animeTitle: animeTitle,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Maaf, video untuk episode ini belum tersedia di server.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isBridgingVideo = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyambungkan ke server video: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,45 +273,64 @@ class _DetailScreenState extends State<DetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.darkBg,
-      body: SafeArea(
-        top: false,
-        child: isDetailLoading && detailData.isEmpty
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
-            : SingleChildScrollView(
+      body: Stack(
+        children: [
+          SafeArea(
+            top: false,
+            child: isDetailLoading && detailData.isEmpty
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(
+                          context,
+                          title: title,
+                          imageUrl: imageUrl,
+                          backdropUrl: backdropUrl,
+                          score: score,
+                          status: status,
+                        ),
+                        _buildDescriptionSection(synopsis),
+                        if (genres.isNotEmpty) _buildGenresSection(genres),
+                        _buildInfoSection(
+                          status: status,
+                          releaseDate: releaseDate,
+                          duration: duration,
+                          rating: rating,
+                          source: source,
+                          type: type,
+                          studios: studios,
+                        ),
+                        _buildEpisodeSection(title),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+          ),
+          if (_isBridgingVideo)
+            Container(
+              color: AppColors.dark.withValues(alpha: 0.7),
+              child: const Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildHeader(
-                      context,
-                      title: title,
-                      imageUrl: imageUrl,
-                      backdropUrl: backdropUrl,
-                      score: score,
-                      status: status,
+                    CircularProgressIndicator(color: AppColors.primary),
+                    SizedBox(height: 16),
+                    Text(
+                      'Menyambungkan ke server video...',
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
-                    _buildDescriptionSection(synopsis),
-                    if (genres.isNotEmpty) _buildGenresSection(genres),
-                    _buildInfoSection(
-                      status: status,
-                      releaseDate: releaseDate,
-                      duration: duration,
-                      rating: rating,
-                      source: source,
-                      type: type,
-                      studios: studios,
-                    ),
-                    _buildEpisodeSection(),
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
+            ),
+        ],
       ),
     );
   }
-
-  //===== HEADER =====
 
   Widget _buildHeader(
     BuildContext context, {
@@ -459,8 +530,6 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  //==== DESCRIPTION =====
-
   Widget _buildDescriptionSection(String synopsis) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -474,8 +543,6 @@ class _DetailScreenState extends State<DetailScreen> {
       ),
     );
   }
-
-  //==== GENRES =====
 
   Widget _buildGenresSection(List<String> genres) {
     return Padding(
@@ -517,8 +584,6 @@ class _DetailScreenState extends State<DetailScreen> {
       ),
     );
   }
-
-  //==== INFO =====
 
   Widget _buildInfoSection({
     required String status,
@@ -575,9 +640,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  //==== EPISODE LIST =====
-
-  Widget _buildEpisodeSection() {
+  Widget _buildEpisodeSection(String animeTitle) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       child: Column(
@@ -653,14 +716,14 @@ class _DetailScreenState extends State<DetailScreen> {
                   itemCount: episodes.length,
                   itemBuilder: (context, index) {
                     final ep = episodes[index];
-                    final epNumber = ep['number']?.toString() ?? '${index + 1}';
+                    final epNumberStr =
+                        ep['number']?.toString() ?? '${index + 1}';
+                    final epNumberInt = int.tryParse(epNumberStr) ?? index + 1;
                     final bool isFiller = ep['filler'] == true;
                     final bool isRecap = ep['recap'] == true;
 
                     return GestureDetector(
-                      onTap: () {
-                        // TODO: Navigate to video player with episode data
-                      },
+                      onTap: () => _playVideo(epNumberInt, animeTitle),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isFiller
@@ -679,14 +742,15 @@ class _DetailScreenState extends State<DetailScreen> {
                           ),
                         ),
                         child: Center(
-                          child: Text(epNumber, style: AppTextStyles.heading4),
+                          child: Text(
+                            epNumberStr,
+                            style: AppTextStyles.heading4,
+                          ),
                         ),
                       ),
                     );
                   },
                 ),
-
-                // Load More
                 if (hasMoreEpisodes) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -705,8 +769,6 @@ class _DetailScreenState extends State<DetailScreen> {
       ),
     );
   }
-
-  //==== HELPER =====
 
   Widget _sectionTitle(String title) {
     return Text(

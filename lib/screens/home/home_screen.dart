@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/anime_model.dart';
 import '../../config/theme/app_theme.dart';
+import '../../services/api_service.dart';
 import '../search_screen.dart';
 import '../../widgets/custom_text_field.dart';
 import 'widgets/pagination_controls.dart';
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? selectedGenre;
 
   final TextEditingController _searchEntryController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -81,9 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _loadInitialData();
     _loadWatchHistory();
-    _fetchGenres();
   }
 
   @override
@@ -101,35 +102,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadInitialData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    await _fetchData(updateLoading: false, showError: false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _fetchGenres();
+
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   Future<void> _fetchGenres() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/genres/anime'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        List<dynamic> genreList = data['data'];
-        if (mounted) {
-          setState(() {
-            genres = genreList
-                .map((g) => {'id': g['mal_id'], 'name': g['name']})
-                .toList();
-            genres.sort(
-              (a, b) => a['name']
-                  .toString()
-                  .toLowerCase()
-                  .compareTo(b['name'].toString().toLowerCase()),
-            );
-          });
-        }
+      final fetchedGenres = await _apiService.fetchAnimeGenres();
+      if (mounted) {
+        setState(() {
+          genres = fetchedGenres;
+        });
       }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          genres = [];
+        });
+      }
       debugPrint('Error fetching genres: $e');
     }
   }
 
-  Future<void> _fetchData() async {
-    setState(() {
-      isLoading = true;
-    });
+  Future<void> _fetchData({
+    bool updateLoading = true,
+    bool showError = true,
+  }) async {
+    if (updateLoading) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     try {
       String url = '';
@@ -142,43 +156,59 @@ class _HomeScreenState extends State<HomeScreen> {
           orElse: () => {'label': 'Senin', 'api': 'monday'},
         )['api']!;
         url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
-      } else if (selectedFilter == 'Pustaka' ||
-          selectedFilter == 'Genre List') {
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      }
-
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
+      } else if (selectedFilter == 'Completed Anime') {
+        final fetched = await _apiService.getCompletedAnime(page: currentPage);
         if (mounted) {
           setState(() {
             animeList = fetched;
+            if (updateLoading) isLoading = false;
+          });
+        }
+        return;
+      } else if (selectedFilter == 'Pustaka' ||
+          selectedFilter == 'Genre List') {
+        if (updateLoading) {
+          setState(() {
             isLoading = false;
           });
         }
+        return;
+      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
+        if (updateLoading) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+        return;
+      }
+
+      List<AnimeModel> fetched = [];
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> dataList = jsonData['data'] ?? [];
+        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
       } else {
-        throw Exception('Failed to load data');
+        debugPrint('Failed to load data: ${response.statusCode}');
+      }
+
+      if (mounted) {
+        setState(() {
+          animeList = fetched;
+          if (updateLoading) isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          animeList = [];
+          if (updateLoading) isLoading = false;
         });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (showError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
       }
     }
   }
@@ -190,28 +220,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final url =
-          '$baseUrl/anime?genres=$genreId&page=$currentPage&order_by=score&sort=desc';
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
-        if (mounted) {
-          setState(() {
-            genreAnimeList = fetched;
-            isGenreAnimeLoading = false;
-          });
-        }
-      } else {
-        throw Exception('Failed to load genre anime');
+      final fetched = await _apiService.fetchAnimeByGenre(
+        genreId,
+        page: currentPage,
+      );
+      if (mounted) {
+        setState(() {
+          genreAnimeList = fetched;
+          isGenreAnimeLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
+          genreAnimeList = [];
           isGenreAnimeLoading = false;
         });
         ScaffoldMessenger.of(
