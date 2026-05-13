@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../category_management_screen.dart';
+import '../../data_storage_screen.dart';
 
 class MoreTab extends StatefulWidget {
   final VoidCallback onGenreTap;
@@ -52,6 +53,18 @@ class _MoreTabState extends State<MoreTab> {
               MaterialPageRoute(
                 builder: (_) => const CategoryManagementScreen(),
               ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        _buildMoreMenuTile(
+          icon: Icons.storage_rounded,
+          title: 'Data dan Penyimpanan',
+          subtitle: 'Kelola backup, restore, dan cache',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DataStorageScreen()),
             );
           },
         ),

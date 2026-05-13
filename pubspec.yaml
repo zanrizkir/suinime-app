@@ -18,10 +18,12 @@ dependencies:
   cached_network_image: ^3.4.1 # Untuk caching gambar
   intl: ^0.19.0 # Untuk format waktu
   flutter_screenutil: ^5.9.3 # Untuk responsive
-  chewie: ^1.14.0
+  chewie: ^1.13.1
   webview_flutter: ^4.13.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  file_picker: ^11.0.2 # Kompatibel dengan Flutter 3.41.x dan Android embedding modern
+  path_provider: ^2.1.0 # Untuk default storage paths
 
 dev_dependencies:
   flutter_test:
