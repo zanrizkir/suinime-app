@@ -1,10 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'continue_watching_hive.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
 
 class ContinueWatchingHiveAdapter extends TypeAdapter<ContinueWatchingHive> {
   @override

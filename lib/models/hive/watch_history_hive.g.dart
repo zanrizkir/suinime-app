@@ -1,10 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'watch_history_hive.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
 
 class WatchHistoryHiveAdapter extends TypeAdapter<WatchHistoryHive> {
   @override

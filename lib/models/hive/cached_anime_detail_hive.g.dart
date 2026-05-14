@@ -1,10 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'cached_anime_detail_hive.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
 
 class CachedAnimeDetailHiveAdapter extends TypeAdapter<CachedAnimeDetailHive> {
   @override
