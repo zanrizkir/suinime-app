@@ -1,11 +1,67 @@
 import 'package:flutter/foundation.dart';
 import '../models/library_model.dart';
+import 'hive_service.dart';
 
 class LibraryNotifier extends ChangeNotifier {
   final Map<String, LibraryCategory> _categories = {};
+  bool _isInitialized = false;
 
   LibraryNotifier() {
-    _initializeDefaultCategory();
+    _initializeFromHive();
+  }
+
+  bool get isInitialized => _isInitialized;
+
+  /// Initialize categories from Hive database
+  Future<void> _initializeFromHive() async {
+    try {
+      // First ensure default category exists
+      await HiveService.initializeDefaultCategories();
+
+      // Load categories from Hive
+      _categories.clear();
+
+      // Load default favorit category
+      _categories['favorit'] = LibraryCategory(
+        id: 'favorit',
+        name: 'Favorit',
+        items: [],
+      );
+
+      // Load all library items and organize by category
+      final allItems = HiveService.getAllLibraryItems();
+      for (final hiveItem in allItems) {
+        final categoryId = hiveItem.categoryId.toLowerCase();
+
+        if (!_categories.containsKey(categoryId)) {
+          _categories[categoryId] = LibraryCategory(
+            id: categoryId,
+            name: categoryId.replaceFirst(
+              categoryId[0],
+              categoryId[0].toUpperCase(),
+            ),
+            items: [],
+          );
+        }
+
+        final item = LibraryItem(
+          malId: hiveItem.malId,
+          title: hiveItem.title,
+          imageUrl: hiveItem.imageUrl,
+          score: hiveItem.score,
+          addedAt: hiveItem.addedAt,
+        );
+
+        _categories[categoryId]!.items.add(item);
+      }
+
+      _isInitialized = true;
+      notifyListeners();
+    } catch (e) {
+      print('Error initializing library from Hive: $e');
+      _initializeDefaultCategory();
+      _isInitialized = true;
+    }
   }
 
   void _initializeDefaultCategory() {
@@ -36,13 +92,13 @@ class LibraryNotifier extends ChangeNotifier {
   bool isFavorite(int malId) => isAnimeInCategory(malId, 'favorit');
 
   /// Add anime to category (create category if not exists)
-  void addAnimeToCategory({
+  Future<void> addAnimeToCategory({
     required int malId,
     required String title,
     required String imageUrl,
     double? score,
     required String categoryId,
-  }) {
+  }) async {
     String catId = categoryId.toLowerCase();
 
     // Create category if doesn't exist
@@ -51,6 +107,11 @@ class LibraryNotifier extends ChangeNotifier {
         id: catId,
         name: categoryId,
         items: [],
+      );
+      // Persist new category to Hive
+      await HiveService.addCategory(
+        categoryId: catId,
+        categoryName: categoryId,
       );
     }
 
@@ -69,20 +130,28 @@ class LibraryNotifier extends ChangeNotifier {
       score: score,
     );
 
-    final updatedItems = [...category.items, newItem];
-    _categories[catId] = category.copyWith(items: updatedItems);
+    category.items.add(newItem);
+
+    // Persist to Hive
+    await HiveService.addToLibrary(
+      malId: malId,
+      title: title,
+      imageUrl: imageUrl,
+      score: score,
+      categoryId: catId,
+    );
 
     notifyListeners();
   }
 
   /// Add anime to default Favorit category
-  void addToFavorites({
+  Future<void> addToFavorites({
     required int malId,
     required String title,
     required String imageUrl,
     double? score,
-  }) {
-    addAnimeToCategory(
+  }) async {
+    await addAnimeToCategory(
       malId: malId,
       title: title,
       imageUrl: imageUrl,
@@ -92,30 +161,29 @@ class LibraryNotifier extends ChangeNotifier {
   }
 
   /// Remove anime from category
-  void removeAnimeFromCategory(int malId, String categoryId) {
+  Future<void> removeAnimeFromCategory(int malId, String categoryId) async {
     String catId = categoryId.toLowerCase();
     final category = _categories[catId];
 
     if (category == null) return;
 
-    final updatedItems = category.items
-        .where((item) => item.malId != malId)
-        .toList();
+    category.items.removeWhere((item) => item.malId == malId);
 
-    _categories[catId] = category.copyWith(items: updatedItems);
+    // Persist removal to Hive
+    await HiveService.removeFromLibrary(malId, catId);
 
     notifyListeners();
   }
 
   /// Remove anime from all categories
-  void removeAnimeFromAllCategories(int malId) {
+  Future<void> removeAnimeFromAllCategories(int malId) async {
     for (final categoryId in _categories.keys.toList()) {
-      removeAnimeFromCategory(malId, categoryId);
+      await removeAnimeFromCategory(malId, categoryId);
     }
   }
 
   /// Create new custom category
-  bool createCategory(String name) {
+  Future<bool> createCategory(String name) async {
     String id = name.toLowerCase();
 
     if (_categories.containsKey(id)) {
@@ -124,20 +192,22 @@ class LibraryNotifier extends ChangeNotifier {
 
     _categories[id] = LibraryCategory(id: id, name: name, items: []);
 
+    // Persist new category to Hive
+    await HiveService.addCategory(categoryId: id, categoryName: name);
+
     notifyListeners();
     return true;
   }
 
   /// Delete category
-  void deleteCategory(String categoryId) {
+  Future<void> deleteCategory(String categoryId) async {
     String catId = categoryId.toLowerCase();
 
-    // Don't allow deleting Favorit category
-    if (catId == 'favorit') {
-      return;
-    }
-
     _categories.remove(catId);
+
+    // Delete from Hive
+    await HiveService.deleteCategory(catId);
+
     notifyListeners();
   }
 
@@ -161,9 +231,13 @@ class LibraryNotifier extends ChangeNotifier {
   }
 
   /// Clear all data
-  void clearAll() {
+  Future<void> clearAll() async {
     _categories.clear();
     _initializeDefaultCategory();
+
+    // Clear Hive data
+    await HiveService.clearAllData();
+
     notifyListeners();
   }
 
@@ -180,30 +254,45 @@ class LibraryNotifier extends ChangeNotifier {
   }
 
   /// Rename category
-  bool renameCategory(String oldCategoryId, String newName) {
+  Future<bool> renameCategory(String oldCategoryId, String newName) async {
     String oldId = oldCategoryId.toLowerCase();
     final category = _categories[oldId];
 
     if (category == null) return false;
-    if (oldId == 'favorit') return false; // Can't rename Favorit
 
     String newId = newName.toLowerCase();
     if (_categories.containsKey(newId)) return false; // New name already exists
 
     final renamedCategory = category.copyWith(name: newName, id: newId);
+    final items = HiveService.getLibraryItemsByCategory(oldId);
     _categories.remove(oldId);
     _categories[newId] = renamedCategory;
+
+    // Update in Hive
+    await HiveService.deleteCategory(oldId);
+    await HiveService.addCategory(categoryId: newId, categoryName: newName);
+
+    // Migrate all items to new category
+    for (final item in items) {
+      await HiveService.addToLibrary(
+        malId: item.malId,
+        title: item.title,
+        imageUrl: item.imageUrl,
+        score: item.score,
+        categoryId: newId,
+      );
+    }
 
     notifyListeners();
     return true;
   }
 
   /// Move anime from one category to another
-  void moveAnimeToCategory({
+  Future<void> moveAnimeToCategory({
     required int malId,
     required String fromCategoryId,
     required String toCategoryId,
-  }) {
+  }) async {
     // Get anime from source category
     String fromId = fromCategoryId.toLowerCase();
     final fromCategory = _categories[fromId];
@@ -219,10 +308,10 @@ class LibraryNotifier extends ChangeNotifier {
     if (animeItem == null) return;
 
     // Remove from source
-    removeAnimeFromCategory(malId, fromCategoryId);
+    await removeAnimeFromCategory(malId, fromCategoryId);
 
     // Add to destination
-    addAnimeToCategory(
+    await addAnimeToCategory(
       malId: animeItem.malId,
       title: animeItem.title,
       imageUrl: animeItem.imageUrl,

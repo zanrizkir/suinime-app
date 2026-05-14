@@ -49,10 +49,18 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             return _buildEmptyState(context, library);
           }
 
+          final mediaQuery = MediaQuery.of(context);
+          final systemBottomInset = [
+            mediaQuery.padding.bottom,
+            mediaQuery.viewPadding.bottom,
+            mediaQuery.systemGestureInsets.bottom,
+          ].reduce((value, element) => value > element ? value : element);
+
           return Column(
             children: [
               Expanded(
                 child: ReorderableListView(
+                  buildDefaultDragHandles: false,
                   onReorder: (oldIndex, newIndex) {
                     setState(() {
                       if (oldIndex < newIndex) {
@@ -76,16 +84,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       _buildCategoryTile(
                         key: ValueKey(categories[i].id),
                         context: context,
+                        index: i,
                         category: categories[i],
                         library: library,
-                        isProtected:
-                            categories[i].id.toLowerCase() == 'favorit',
                       ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16),
+              SafeArea(
+                top: false,
+                minimum: EdgeInsets.fromLTRB(16, 8, 16, systemBottomInset + 16),
                 child: SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -173,9 +181,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   Widget _buildCategoryTile({
     required Key key,
     required BuildContext context,
+    required int index,
     required LibraryCategory category,
     required LibraryNotifier library,
-    required bool isProtected,
   }) {
     return Container(
       key: key,
@@ -186,7 +194,16 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         border: Border.all(color: AppColors.border, width: 1),
       ),
       child: ListTile(
-        leading: Icon(Icons.drag_handle, color: AppColors.textTertiary),
+        leading: ReorderableDragStartListener(
+          index: index,
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Icon(Icons.drag_handle, color: AppColors.textTertiary),
+            ),
+          ),
+        ),
         title: Text(
           category.name,
           style: const TextStyle(
@@ -198,49 +215,33 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
           '${category.items.length} item${category.items.length != 1 ? 's' : ''}',
           style: const TextStyle(color: AppColors.textTertiary, fontSize: 12),
         ),
-        trailing: isProtected
-            ? Tooltip(
-                message: 'Kategori default',
-                child: Icon(
-                  Icons.lock_outline,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
-              )
-            : PopupMenuButton(
-                color: AppColors.darkSurface,
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    child: const Row(
-                      children: [
-                        Icon(Icons.edit, color: AppColors.primary, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'Ubah Nama',
-                          style: TextStyle(color: AppColors.white),
-                        ),
-                      ],
-                    ),
-                    onTap: () =>
-                        _showRenameCategoryDialog(context, category, library),
-                  ),
-                  PopupMenuItem(
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: AppColors.error,
-                          size: 18,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Hapus', style: TextStyle(color: AppColors.error)),
-                      ],
-                    ),
-                    onTap: () =>
-                        _showDeleteCategoryDialog(context, category, library),
-                  ),
+        trailing: PopupMenuButton(
+          color: AppColors.darkSurface,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              child: const Row(
+                children: [
+                  Icon(Icons.edit, color: AppColors.primary, size: 18),
+                  SizedBox(width: 8),
+                  Text('Ubah Nama', style: TextStyle(color: AppColors.white)),
                 ],
               ),
+              onTap: () =>
+                  _showRenameCategoryDialog(context, category, library),
+            ),
+            PopupMenuItem(
+              child: const Row(
+                children: [
+                  Icon(Icons.delete_outline, color: AppColors.error, size: 18),
+                  SizedBox(width: 8),
+                  Text('Hapus', style: TextStyle(color: AppColors.error)),
+                ],
+              ),
+              onTap: () =>
+                  _showDeleteCategoryDialog(context, category, library),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -284,29 +285,33 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
-                if (library.createCategory(name)) {
+                if (await library.createCategory(name)) {
                   setState(() {
                     _categoryOrder.add(name.toLowerCase());
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Kategori "$name" dibuat'),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(milliseconds: 1000),
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Kategori "$name" dibuat'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Kategori sudah ada'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(milliseconds: 800),
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Kategori sudah ada'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(milliseconds: 800),
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -365,32 +370,36 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final newName = controller.text.trim();
               if (newName.isNotEmpty && newName != category.name) {
-                if (library.renameCategory(category.id, newName)) {
+                if (await library.renameCategory(category.id, newName)) {
                   setState(() {
                     final idx = _categoryOrder.indexOf(category.id);
                     if (idx != -1) {
                       _categoryOrder[idx] = newName.toLowerCase();
                     }
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Kategori diubah menjadi "$newName"'),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(milliseconds: 1000),
-                    ),
-                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Kategori diubah menjadi "$newName"'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(milliseconds: 1000),
+                      ),
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nama kategori sudah ada'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(milliseconds: 800),
-                    ),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Nama kategori sudah ada'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(milliseconds: 800),
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -434,19 +443,21 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {
-              library.deleteCategory(category.id);
+            onPressed: () async {
+              await library.deleteCategory(category.id);
               setState(() {
                 _categoryOrder.removeWhere((id) => id == category.id);
               });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Kategori "${category.name}" dihapus'),
-                  backgroundColor: AppColors.darkSurface,
-                  duration: const Duration(milliseconds: 1000),
-                ),
-              );
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Kategori "${category.name}" dihapus'),
+                    backgroundColor: AppColors.darkSurface,
+                    duration: const Duration(milliseconds: 1000),
+                  ),
+                );
+              }
             },
             child: const Text(
               'Hapus',

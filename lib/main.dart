@@ -6,8 +6,16 @@ import 'screens/detail_screen.dart';
 import 'screens/player_screen.dart';
 import 'services/api_service.dart';
 import 'services/library_service.dart';
+import 'services/search_history_notifier.dart';
+import 'services/hive_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive database
+  await HiveService.initHive();
+  await HiveService.initializeDefaultCategories();
+
   runApp(const SuinimeApp());
   ApiService().fetchTopAnime();
 }
@@ -18,7 +26,10 @@ class SuinimeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => LibraryNotifier())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => LibraryNotifier()),
+        ChangeNotifierProvider(create: (_) => SearchHistoryNotifier()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Suinime',

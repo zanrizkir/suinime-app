@@ -4,10 +4,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/anime_model.dart';
 import '../../config/theme/app_theme.dart';
-import '../../services/api_service.dart';
+import '../dashboard_anime_list_screen.dart';
 import '../search_screen.dart';
 import '../../widgets/custom_text_field.dart';
-import 'widgets/pagination_controls.dart';
 import 'widgets/home_views.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/library_tab.dart';
@@ -24,16 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedFilter = 'Home';
   int currentPage = 1;
   bool isLoading = false;
-  bool isGenreAnimeLoading = false;
   List<AnimeModel> animeList = [];
-  List<AnimeModel> genreAnimeList = [];
   List<Map<String, dynamic>> watchHistory = [];
-  List<Map<String, dynamic>> genres = [];
   String selectedDay = 'Senin';
-  Map<String, dynamic>? selectedGenre;
 
   final TextEditingController _searchEntryController = TextEditingController();
-  final ApiService _apiService = ApiService();
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -109,30 +103,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await _fetchData(updateLoading: false, showError: false);
     await Future.delayed(const Duration(milliseconds: 500));
-    await _fetchGenres();
 
     if (!mounted) return;
     setState(() {
       isLoading = false;
     });
-  }
-
-  Future<void> _fetchGenres() async {
-    try {
-      final fetchedGenres = await _apiService.fetchAnimeGenres();
-      if (mounted) {
-        setState(() {
-          genres = fetchedGenres;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          genres = [];
-        });
-      }
-      debugPrint('Error fetching genres: $e');
-    }
   }
 
   Future<void> _fetchData({
@@ -148,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       String url = '';
 
-      if (selectedFilter == 'Home' || selectedFilter == 'Top Anime') {
+      if (selectedFilter == 'Home') {
         url = '$baseUrl/top/anime?page=$currentPage';
       } else if (selectedFilter == 'Jadwal Rilis') {
         final dayApi = _days.firstWhere(
@@ -156,24 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
           orElse: () => {'label': 'Senin', 'api': 'monday'},
         )['api']!;
         url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
-      } else if (selectedFilter == 'Completed Anime') {
-        final fetched = await _apiService.getCompletedAnime(page: currentPage);
-        if (mounted) {
-          setState(() {
-            animeList = fetched;
-            if (updateLoading) isLoading = false;
-          });
-        }
-        return;
       } else if (selectedFilter == 'Pustaka' ||
-          selectedFilter == 'Genre List') {
-        if (updateLoading) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-        return;
-      } else if (selectedFilter == 'Riwayat' || selectedFilter == 'Lainnya') {
+          selectedFilter == 'Riwayat' ||
+          selectedFilter == 'Lainnya') {
         if (updateLoading) {
           setState(() {
             isLoading = false;
@@ -213,57 +173,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _fetchGenreAnime(int genreId) async {
-    setState(() {
-      isGenreAnimeLoading = true;
-      genreAnimeList = [];
-    });
-
-    try {
-      final fetched = await _apiService.fetchAnimeByGenre(
-        genreId,
-        page: currentPage,
-      );
-      if (mounted) {
-        setState(() {
-          genreAnimeList = fetched;
-          isGenreAnimeLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          genreAnimeList = [];
-          isGenreAnimeLoading = false;
-        });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
   void _changeFilter(String filter) {
     if (selectedFilter == filter) return;
     setState(() {
       selectedFilter = filter;
       currentPage = 1;
       animeList = [];
-      genreAnimeList = [];
-      selectedGenre = null;
     });
     _fetchData();
-  }
-
-  void _changeDashboardFilter(String filter) {
-    if (selectedFilter == filter) return;
-    setState(() {
-      selectedFilter = filter;
-      currentPage = 1;
-      animeList = [];
-      genreAnimeList = [];
-      selectedGenre = null;
-    });
   }
 
   void _changeDay(String day) {
@@ -276,55 +193,44 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchData();
   }
 
-  void _selectGenre(Map<String, dynamic> genre) {
-    setState(() {
-      selectedGenre = genre;
-      currentPage = 1;
-      genreAnimeList = [];
-    });
-    _fetchGenreAnime(genre['id'] as int);
-  }
-
   void _nextPage() {
     setState(() {
       currentPage++;
-      if (selectedFilter == 'Genre List') {
-        genreAnimeList = [];
-      } else {
-        animeList = [];
-      }
+      animeList = [];
     });
-    if (selectedFilter == 'Genre List' && selectedGenre != null) {
-      _fetchGenreAnime(selectedGenre!['id'] as int);
-    } else {
-      _fetchData();
-    }
+    _fetchData();
   }
 
   void _prevPage() {
     if (currentPage <= 1) return;
     setState(() {
       currentPage--;
-      if (selectedFilter == 'Genre List') {
-        genreAnimeList = [];
-      } else {
-        animeList = [];
-      }
+      animeList = [];
     });
-    if (selectedFilter == 'Genre List' && selectedGenre != null) {
-      _fetchGenreAnime(selectedGenre!['id'] as int);
-    } else {
-      _fetchData();
-    }
+    _fetchData();
+  }
+
+  void _returnToHomeTab() {
+    if (selectedFilter == 'Home') return;
+    setState(() {
+      selectedFilter = 'Home';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.darkBg,
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+    return PopScope(
+      canPop: selectedFilter == 'Home',
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _returnToHomeTab();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.darkBg,
+        appBar: _buildAppBar(),
+        body: _buildBody(),
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      ),
     );
   }
 
@@ -362,9 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 key: ValueKey('tab-header-$activeIndex'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.heading3.copyWith(
-                  color: AppColors.white,
-                ),
+                style: AppTextStyles.heading3.copyWith(color: AppColors.white),
               ),
       ),
     );
@@ -480,15 +384,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int get _activeBottomNavIndex {
-    if (selectedFilter == 'Completed Anime') {
-      return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
-    }
-    if (selectedFilter == 'Genre List') {
-      return _bottomNavItems.indexWhere((item) => item.filter == 'Lainnya');
-    }
-    if (selectedFilter == 'Top Anime' || selectedFilter == 'On-going Anime') {
-      return _bottomNavItems.indexWhere((item) => item.filter == 'Home');
-    }
     final index = _bottomNavItems.indexWhere(
       (item) => item.filter == selectedFilter,
     );
@@ -496,45 +391,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
-    switch (selectedFilter) {
-      case 'Home':
-        return _buildHomeBody();
-      case 'Top Anime':
-        return DashboardTab(
-          filter: 'Top Anime',
-          onTopAnimeSeeAll: () {},
-          onLatestAnimeSeeAll: () {},
-        );
-      case 'Jadwal Rilis':
-        return _buildJadwalBody();
-      case 'On-going Anime':
-        return DashboardTab(
-          filter: 'On-going Anime',
-          onTopAnimeSeeAll: () {},
-          onLatestAnimeSeeAll: () {},
-        );
-      case 'Completed Anime':
-        return _buildCompletedBody();
-      case 'Pustaka':
-        return const LibraryTab();
-      case 'Genre List':
-        return _buildGenreBody();
-      case 'Riwayat':
-        return _buildHistoryBody();
-      case 'Lainnya':
-        return _buildMoreBody();
-      default:
-        return const SizedBox.shrink();
-    }
+    return IndexedStack(
+      index: _activeBottomNavIndex,
+      children: [
+        _buildHomeBody(),
+        _buildJadwalBody(),
+        const LibraryTab(),
+        _buildHistoryBody(),
+        _buildMoreBody(),
+      ],
+    );
   }
 
   //==== HOME =====
 
   Widget _buildHomeBody() {
     return DashboardTab(
-      filter: selectedFilter,
-      onTopAnimeSeeAll: () => _changeDashboardFilter('Top Anime'),
-      onLatestAnimeSeeAll: () => _changeDashboardFilter('On-going Anime'),
+      filter: 'Home',
+      onTopAnimeSeeAll: () =>
+          _openDashboardList(title: 'Top Anime', filter: 'Top Anime'),
+      onLatestAnimeSeeAll: () =>
+          _openDashboardList(title: 'Update Terbaru', filter: 'On-going Anime'),
+    );
+  }
+
+  void _openDashboardList({required String title, required String filter}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DashboardAnimeListScreen(title: title, filter: filter),
+      ),
     );
   }
 
@@ -599,17 +485,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCompletedBody() {
-    return HomeViews.buildScrollableGridSection(
-      context: context,
-      animeList: animeList,
-      isLoading: isLoading,
-      currentPage: currentPage,
-      onPrevPage: currentPage == 1 ? null : _prevPage,
-      onNextPage: _nextPage,
-    );
-  }
-
   //==== RIWAYAT =====
 
   Widget _buildHistoryBody() {
@@ -646,134 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //==== LAINNYA =====
 
   Widget _buildMoreBody() {
-    return MoreTab(
-      onGenreTap: () => _changeFilter('Genre List'),
-      onCompletedTap: () => _changeFilter('Completed Anime'),
-    );
-  }
-
-  //==== GENRE LIST =====
-
-  Widget _buildGenreBody() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (genres.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const spacing = 8.0;
-                final columns = (constraints.maxWidth / 132)
-                    .floor()
-                    .clamp(2, 4)
-                    .toInt();
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(12),
-                  itemCount: genres.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    mainAxisExtent: 40,
-                  ),
-                  itemBuilder: (context, index) {
-                    final genre = genres[index];
-                    final isSelected = selectedGenre?['id'] == genre['id'];
-                    return GestureDetector(
-                      onTap: () => _selectGenre(genre),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.darkSurface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.border.withValues(alpha: 0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          genre['name'],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isSelected
-                                ? AppColors.dark
-                                : AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-
-          if (selectedGenre != null) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-              child: Text(
-                selectedGenre!['name'],
-                style: const TextStyle(
-                  color: AppColors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (isGenreAnimeLoading)
-              const Padding(
-                padding: EdgeInsets.all(40),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
-            else if (genreAnimeList.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
-                  child: Text(
-                    'No anime found',
-                    style: TextStyle(color: AppColors.textTertiary),
-                  ),
-                ),
-              )
-            else ...[
-              HomeViews.buildAnimeGrid(
-                context: context,
-                animeList: genreAnimeList,
-              ),
-              PaginationControls(
-                currentPage: currentPage,
-                onPrevPage: currentPage == 1 ? null : _prevPage,
-                onNextPage: _nextPage,
-              ),
-            ],
-          ],
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
+    return const MoreTab();
   }
 }
 

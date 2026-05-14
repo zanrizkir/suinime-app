@@ -329,17 +329,17 @@ class _DashboardTabState extends State<DashboardTab> {
 
           HomeViews.buildPreviewSection(
             context: context,
-            title: 'Top Anime',
-            animeList: animeList.take(6).toList(),
-            isLoading: isLoading,
-            onSeeAll: widget.onTopAnimeSeeAll,
-          ),
-          HomeViews.buildPreviewSection(
-            context: context,
             title: 'Update Terbaru',
             animeList: latestAnimeList.take(6).toList(),
             isLoading: isLatestLoading,
             onSeeAll: widget.onLatestAnimeSeeAll,
+          ),
+          HomeViews.buildPreviewSection(
+            context: context,
+            title: 'Top Anime',
+            animeList: animeList.take(6).toList(),
+            isLoading: isLoading,
+            onSeeAll: widget.onTopAnimeSeeAll,
           ),
           const SizedBox(height: 20),
         ],

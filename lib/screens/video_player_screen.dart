@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/otakudesu_service.dart';
 import '../config/theme/app_theme.dart';
@@ -30,7 +31,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    _enterLandscapeMode();
     _loadEpisodeData();
+  }
+
+  @override
+  void dispose() {
+    _restorePortraitMode();
+    super.dispose();
+  }
+
+  Future<void> _enterLandscapeMode() {
+    return SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  Future<void> _restorePortraitMode() {
+    return SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
   Future<void> _loadEpisodeData() async {
@@ -40,8 +62,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       _errorMessage = '';
     });
 
-    final result =
-        await _apiService.fetchEpisodeStream(widget.episodeSlug);
+    final result = await _apiService.fetchEpisodeStream(widget.episodeSlug);
 
     if (result['success'] == true) {
       final streamUrl = result['streamUrl'] as String;
@@ -91,8 +112,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       appBar: AppBar(
         title: Text(
           _episodeTitle.isEmpty ? widget.animeTitle : _episodeTitle,
-          style:
-              const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -131,11 +151,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 64,
-              ),
+              const Icon(Icons.error_outline, color: AppColors.error, size: 64),
               const SizedBox(height: 16),
               const Text(
                 'Gagal Memuat Video',
@@ -174,10 +190,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             child: Center(
               child: Text(
                 'Gunakan tombol fullscreen pada pemutar video',
-                style: TextStyle(
-                  color: AppColors.textTertiary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
               ),
             ),
           ),
