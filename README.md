@@ -1,137 +1,75 @@
 # Suinime 🎬
 
-**Suinime** adalah aplikasi mobile berbasis **Flutter** untuk menelusuri katalog anime, melihat detail metadata, menyimpan favorit dan riwayat tontonan, serta melakukan streaming episode anime langsung dari dalam aplikasi.
+**Suinime** adalah aplikasi mobile Flutter untuk menjelajahi katalog anime, melihat detail metadata, menyimpan library/history secara lokal, dan menonton episode melalui integrasi streaming backend.
 
-Aplikasi ini menggunakan arsitektur **Hybrid Bridging**, yaitu menggabungkan metadata anime dari **Jikan API / MyAnimeList** dengan link streaming dari **Otakudesu Scraper Backend**. Pendekatan ini memungkinkan aplikasi menampilkan informasi anime yang kaya sekaligus tetap menyediakan akses streaming yang praktis.
+Project ini menggunakan pendekatan **Hybrid Bridging**: metadata anime diambil dari **Jikan API / MyAnimeList**, sedangkan data episode dan link streaming diambil dari **Otakudesu Scraper Backend**.
 
 ---
 
-## Ringkasan Project
+## Ringkasan
 
-| Informasi | Detail |
+| Item | Detail |
 |---|---|
-| Nama Aplikasi | Suinime |
 | Platform | Mobile App |
 | Framework | Flutter |
 | Bahasa | Dart |
 | State Management | Provider |
 | Local Database | Hive |
 | Metadata API | Jikan API / MyAnimeList |
-| Streaming Source | Otakudesu Scraper Backend |
+| Streaming Backend | Otakudesu Scraper Backend |
 | Arsitektur | Hybrid Bridging |
 
 ---
 
 ## Fitur Utama
 
-| Fitur | Deskripsi | Teknologi |
-|---|---|---|
-| Katalog Jikan | Menampilkan katalog anime, detail anime, genre, skor, sinopsis, poster, status, dan informasi lain dari MyAnimeList melalui Jikan API. | Jikan API |
-| Smart Video Bridging | Menghubungkan metadata anime dari Jikan dengan data episode dan link streaming dari backend Otakudesu. | Flutter Service Layer, Otakudesu Backend |
-| Hive Local DB | Menyimpan data favorit dan history secara lokal di perangkat pengguna. | Hive |
-| In-App Streaming | Memutar episode anime langsung di dalam aplikasi tanpa perlu membuka browser eksternal. | Flutter Video Player / Streaming Service |
-| Favorite Anime | Menyimpan anime favorit agar mudah diakses kembali. | Hive, Provider |
-| History Tontonan | Menyimpan riwayat anime atau episode yang pernah ditonton pengguna. | Hive, Provider |
-| State Management | Mengelola perubahan state aplikasi secara reaktif dan terstruktur. | Provider |
+| Fitur | Deskripsi |
+|---|---|
+| Katalog Jikan | Menampilkan data anime seperti judul, poster, genre, skor, sinopsis, status, dan detail lain dari Jikan API. |
+| Smart Video Bridging | Mencocokkan metadata anime dengan data episode dan link streaming dari backend Otakudesu. |
+| Hive Local DB | Menyimpan library, kategori, search history, watch history, continue watching, dan cache detail anime secara lokal. |
+| In-App Streaming | Memutar episode anime langsung di dalam aplikasi. |
+| Data Storage | Menyediakan pengelolaan data lokal, termasuk backup/restore dan pengaturan penyimpanan. |
 
 ---
 
-## Arsitektur Utama
-
-Suinime menggunakan pendekatan **Hybrid Bridging Architecture**.
+## Alur Arsitektur
 
 ```text
-+----------------------+
-|      Flutter App     |
-+----------+-----------+
-           |
-           | Fetch Metadata
-           v
-+----------------------+
-|      Jikan API       |
-|   MyAnimeList Data   |
-+----------------------+
-           |
-           | Match / Bridge Anime Title
-           v
-+------------------------------+
-| Otakudesu Scraper Backend    |
-| Episode & Streaming Links    |
-+------------------------------+
-           |
-           | Save Local Data
-           v
-+----------------------+
-|      Hive DB         |
-| Favorite & History   |
-+----------------------+
+Flutter App
+   |
+   +-- Metadata Anime --> Jikan API / MyAnimeList
+   |
+   +-- Episode & Stream --> Otakudesu Scraper Backend
+   |
+   +-- Local Data --> Hive Database
 ```
-
-### Alur Data
-
-| Tahap | Proses |
-|---|---|
-| 1 | Aplikasi mengambil metadata anime dari Jikan API. |
-| 2 | Pengguna memilih anime dari katalog atau halaman pencarian. |
-| 3 | Service aplikasi mencocokkan judul anime dengan data dari Otakudesu Backend. |
-| 4 | Backend mengembalikan daftar episode dan link streaming. |
-| 5 | Aplikasi menampilkan player streaming di dalam aplikasi. |
-| 6 | Data favorit dan history disimpan secara lokal menggunakan Hive. |
-
----
-
-## Tech Stack
-
-| Kategori | Teknologi |
-|---|---|
-| Mobile Framework | Flutter |
-| Programming Language | Dart |
-| State Management | Provider |
-| Local Database | Hive |
-| Metadata API | Jikan API |
-| Streaming Backend | Otakudesu Scraper Backend |
-| Backend Tunnel | ngrok |
-| Code Generator | build_runner |
-| Local Storage Adapter | hive_generator |
 
 ---
 
 ## Persyaratan Sistem
 
-Sebelum menjalankan project, pastikan perangkat pengembangan sudah memiliki komponen berikut:
-
-| Kebutuhan | Versi / Keterangan |
+| Kebutuhan | Keterangan |
 |---|---|
 | Flutter SDK | Versi stabil terbaru direkomendasikan |
 | Dart SDK | Mengikuti versi Flutter SDK |
 | Android Studio / VS Code | Untuk development Flutter |
-| Android SDK | Untuk menjalankan emulator atau build Android |
-| Node.js | Dibutuhkan untuk menjalankan backend scraper |
-| npm / pnpm / yarn | Package manager backend |
-| ngrok | Untuk membuat public tunnel ke backend lokal |
+| Android SDK | Untuk emulator atau build Android |
+| Node.js | Untuk menjalankan backend scraper |
+| ngrok | Untuk membuat tunnel backend lokal |
 | Git | Untuk clone repository |
 
-Cek instalasi Flutter:
+Cek environment:
 
 ```bash
 flutter doctor
-```
-
-Cek instalasi Node.js:
-
-```bash
 node --version
-```
-
-Cek instalasi ngrok:
-
-```bash
 ngrok version
 ```
 
 ---
 
-## Instalasi dan Konfigurasi
+## Instalasi
 
 ### 1. Clone Repository
 
@@ -139,8 +77,6 @@ ngrok version
 git clone https://github.com/username/suinime-app.git
 cd suinime-app
 ```
-
-> Ganti URL repository dengan URL repository Suinime yang digunakan.
 
 ### 2. Install Dependency Flutter
 
@@ -150,133 +86,87 @@ flutter pub get
 
 ### 3. Generate Hive Adapter
 
-> **Wajib dilakukan.**
->
-> Project ini menggunakan Hive sebagai local database. Jika adapter Hive belum di-generate, aplikasi dapat mengalami error saat membaca atau menyimpan data lokal.
-
-Jalankan perintah berikut:
+> **Wajib dijalankan**, terutama setelah clone ulang, pindah device, atau mengubah model Hive.
 
 ```bash
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-Perintah ini akan membuat file adapter yang dibutuhkan Hive, misalnya:
+Perintah ini akan menghasilkan file adapter seperti:
 
 ```text
-*.g.dart
+lib/models/hive/*.g.dart
 ```
 
-Contoh file hasil generate:
+### 4. Jalankan Aplikasi
 
-```text
-lib/models/anime_model.g.dart
-lib/models/favorite_model.g.dart
-lib/models/history_model.g.dart
+```bash
+flutter run
 ```
 
-Jika terjadi error setelah berpindah device, clone ulang project, atau membersihkan build cache, jalankan kembali perintah generate Hive adapter tersebut.
+Untuk memilih device tertentu:
+
+```bash
+flutter devices
+flutter run -d <device_id>
+```
 
 ---
 
 ## Konfigurasi Backend Otakudesu
 
-Suinime membutuhkan backend scraper Otakudesu untuk mendapatkan daftar episode dan link streaming.
+Suinime membutuhkan backend scraper Otakudesu untuk mengambil data episode dan link streaming.
 
 ### 1. Jalankan Backend Lokal
 
-Masuk ke folder backend Otakudesu, lalu jalankan server:
+Masuk ke folder backend, lalu jalankan server sesuai konfigurasi backend:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Atau sesuai konfigurasi backend:
-
-```bash
-node index.js
-```
-
-Pastikan backend berjalan di localhost, misalnya:
+Contoh backend lokal:
 
 ```text
 http://localhost:3000
 ```
 
-### 2. Jalankan ngrok
-
-Karena aplikasi mobile atau emulator tidak selalu dapat mengakses `localhost` komputer secara langsung, gunakan ngrok untuk membuat public URL.
+### 2. Buat Tunnel dengan ngrok
 
 ```bash
 ngrok http 3000
 ```
 
-Contoh output ngrok:
+Contoh URL ngrok:
 
 ```text
-Forwarding  https://abc123.ngrok-free.app -> http://localhost:3000
+https://abc123.ngrok-free.app
 ```
 
-Gunakan URL HTTPS dari ngrok sebagai base URL backend.
+### 3. Update Base URL
 
-### 3. Atur Base URL di `otakudesu_service.dart`
-
-Buka file berikut:
+Buka file:
 
 ```text
 lib/services/otakudesu_service.dart
 ```
 
-Cari konfigurasi base URL backend, lalu ubah menjadi URL ngrok aktif.
-
-Contoh:
+Ubah base URL menjadi URL ngrok aktif:
 
 ```dart
 class OtakudesuService {
   static const String baseUrl = 'https://abc123.ngrok-free.app';
-
-  // Endpoint service lainnya
 }
 ```
 
-Pastikan URL memenuhi ketentuan berikut:
+Catatan:
 
-| Syarat | Keterangan |
+| Hal | Keterangan |
 |---|---|
-| Menggunakan HTTPS | Direkomendasikan untuk akses dari mobile app |
-| Tidak diakhiri slash ganda | Hindari format seperti `https://example.ngrok-free.app//api` |
-| Masih aktif | URL ngrok gratis berubah setiap kali tunnel dijalankan ulang |
-| Sesuai port backend | Pastikan port ngrok sama dengan port backend lokal |
-
----
-
-## Menjalankan Aplikasi
-
-### Android Emulator / Device
-
-```bash
-flutter run
-```
-
-### Menjalankan dengan Device Tertentu
-
-Lihat daftar device:
-
-```bash
-flutter devices
-```
-
-Jalankan ke device tertentu:
-
-```bash
-flutter run -d <device_id>
-```
-
-Contoh:
-
-```bash
-flutter run -d emulator-5554
-```
+| Gunakan HTTPS | Lebih aman dan cocok untuk akses mobile. |
+| URL ngrok berubah | Update `baseUrl` setiap kali tunnel baru dibuat. |
+| Pastikan backend aktif | Aplikasi tidak dapat streaming jika backend lokal mati. |
 
 ---
 
@@ -285,144 +175,85 @@ flutter run -d emulator-5554
 ```text
 lib/
 +-- main.dart
++-- test_api.dart
++-- config/
+|   +-- theme/
+|       +-- app_theme.dart
 +-- models/
 |   +-- anime_model.dart
-|   +-- favorite_model.dart
-|   +-- history_model.dart
-|   +-- *.g.dart
-+-- providers/
-|   +-- anime_provider.dart
-|   +-- favorite_provider.dart
-|   +-- history_provider.dart
+|   +-- library_model.dart
+|   +-- hive/
+|       +-- cached_anime_detail_hive.dart
+|       +-- continue_watching_hive.dart
+|       +-- library_category_hive.dart
+|       +-- library_item_hive.dart
+|       +-- search_history_hive.dart
+|       +-- watch_history_hive.dart
+|       +-- *.g.dart
 +-- screens/
-|   +-- home_screen.dart
+|   +-- category_management_screen.dart
+|   +-- completed_anime_screen.dart
+|   +-- dashboard_anime_list_screen.dart
+|   +-- data_storage_screen.dart
 |   +-- detail_screen.dart
-|   +-- favorite_screen.dart
-|   +-- history_screen.dart
+|   +-- genre_list_screen.dart
 |   +-- player_screen.dart
+|   +-- search_screen.dart
+|   +-- video_player_screen.dart
+|   +-- home/
+|       +-- home_screen.dart
+|       +-- tabs/
+|       |   +-- dashboard_tab.dart
+|       |   +-- history_tab.dart
+|       |   +-- library_tab.dart
+|       |   +-- more_tab.dart
+|       |   +-- schedule_tab.dart
+|       +-- widgets/
+|           +-- anime_grid_card.dart
+|           +-- home_views.dart
+|           +-- pagination_controls.dart
+|           +-- section_header.dart
 +-- services/
+|   +-- api_service.dart
+|   +-- backup_restore_service.dart
 |   +-- consumet_service.dart
-|   +-- jikan_service.dart
+|   +-- hive_service.dart
+|   +-- library_service.dart
 |   +-- otakudesu_service.dart
+|   +-- search_history_notifier.dart
+|   +-- storage_settings_service.dart
+|   +-- video_tracking_service.dart
 +-- widgets/
-|   +-- anime_card.dart
-|   +-- episode_tile.dart
-|   +-- loading_widget.dart
+|   +-- custom_button.dart
+|   +-- custom_text_field.dart
 +-- utils/
-    +-- constants.dart
-    +-- helpers.dart
+    +-- responsive.dart
 ```
-
-### Penjelasan Folder
 
 | Folder / File | Fungsi |
 |---|---|
-| `lib/main.dart` | Entry point aplikasi Flutter. |
-| `lib/models` | Berisi model data aplikasi, termasuk model Hive. |
-| `lib/providers` | Berisi state management menggunakan Provider. |
-| `lib/screens` | Berisi halaman utama aplikasi. |
-| `lib/services` | Berisi logic komunikasi API dan backend. |
-| `lib/widgets` | Berisi komponen UI reusable. |
-| `lib/utils` | Berisi helper, konstanta, dan utilitas umum. |
-| `*.g.dart` | File hasil generate Hive adapter dari build_runner. |
-
----
-
-## Service Layer
-
-### Jikan / Consumet Service
-
-Service ini bertugas mengambil metadata anime seperti:
-
-| Data | Keterangan |
-|---|---|
-| Judul Anime | Nama anime dari MyAnimeList |
-| Sinopsis | Deskripsi cerita anime |
-| Skor | Rating anime |
-| Poster | Gambar cover anime |
-| Genre | Daftar genre anime |
-| Status | Status penayangan |
-| Episode | Jumlah episode dari metadata |
-
-Contoh konsep penggunaan:
-
-```dart
-final animeList = await jikanService.getTopAnime();
-```
-
-### Otakudesu Service
-
-Service ini bertugas mengambil data streaming dari backend scraper.
-
-| Data | Keterangan |
-|---|---|
-| Daftar Episode | Episode anime dari Otakudesu |
-| Detail Episode | Informasi episode tertentu |
-| Streaming URL | Link video untuk diputar di aplikasi |
-| Mirror | Alternatif server streaming jika tersedia |
-
-Contoh konsep penggunaan:
-
-```dart
-final episodes = await otakudesuService.getEpisodes(animeTitle);
-```
-
----
-
-## Local Database dengan Hive
-
-Suinime menggunakan Hive untuk menyimpan data lokal seperti:
-
-| Data | Fungsi |
-|---|---|
-| Favorite | Menyimpan anime favorit pengguna |
-| History | Menyimpan riwayat tontonan |
-| Cache Ringan | Menyimpan data tertentu agar lebih cepat diakses |
-
-### Contoh Model Hive
-
-```dart
-import 'package:hive/hive.dart';
-
-part 'favorite_model.g.dart';
-
-@HiveType(typeId: 1)
-class FavoriteModel extends HiveObject {
-  @HiveField(0)
-  final int malId;
-
-  @HiveField(1)
-  final String title;
-
-  @HiveField(2)
-  final String imageUrl;
-
-  FavoriteModel({
-    required this.malId,
-    required this.title,
-    required this.imageUrl,
-  });
-}
-```
-
-Setelah membuat atau mengubah model Hive, jalankan kembali:
-
-```bash
-flutter pub run build_runner build --delete-conflicting-outputs
-```
+| `lib/main.dart` | Entry point aplikasi. |
+| `lib/config/theme` | Konfigurasi tema aplikasi. |
+| `lib/models` | Model data utama aplikasi. |
+| `lib/models/hive` | Model Hive dan adapter hasil generate. |
+| `lib/screens` | Halaman aplikasi. |
+| `lib/screens/home` | Home screen, tab utama, dan widget khusus home. |
+| `lib/services` | Logic API, backend, Hive, library, backup/restore, storage, dan tracking video. |
+| `lib/widgets` | Komponen UI reusable. |
+| `lib/utils` | Helper umum seperti responsive layout. |
 
 ---
 
 ## Konfigurasi Penting
 
-| Konfigurasi | Lokasi | Keterangan |
+| Konfigurasi | Lokasi | Catatan |
 |---|---|---|
-| Base URL Otakudesu Backend | `lib/services/otakudesu_service.dart` | URL backend scraper yang aktif. |
-| Hive Adapter | `lib/models/*.g.dart` | Harus di-generate dengan build_runner. |
-| Provider Setup | `lib/main.dart` | Registrasi provider aplikasi. |
-| Permission Internet | `android/app/src/main/AndroidManifest.xml` | Dibutuhkan agar aplikasi dapat mengakses API. |
+| Base URL Backend | `lib/services/otakudesu_service.dart` | Gunakan URL HTTPS dari ngrok. |
+| Hive Adapter | `lib/models/hive/*.g.dart` | Generate dengan `build_runner`. |
+| Hive Service | `lib/services/hive_service.dart` | Mengatur inisialisasi dan akses database lokal. |
+| Permission Internet | `android/app/src/main/AndroidManifest.xml` | Diperlukan untuk akses API dan streaming. |
 
-Pastikan Android memiliki permission internet:
+Pastikan permission internet tersedia:
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
@@ -432,87 +263,15 @@ Pastikan Android memiliki permission internet:
 
 ## Troubleshooting
 
-### 1. Jikan API Error 429 Rate Limit
+| Masalah | Penyebab Umum | Solusi |
+|---|---|---|
+| `HTTP 429 Too Many Requests` | Request ke Jikan API terlalu sering. | Kurangi frekuensi request, gunakan cache, atau tambahkan delay/retry. |
+| `TypeAdapter not found` | Adapter Hive belum di-generate atau belum terdaftar. | Jalankan `flutter pub run build_runner build --delete-conflicting-outputs`. |
+| `HiveError: Cannot read, unknown typeId` | Data lokal tidak cocok dengan adapter/model terbaru. | Generate adapter ulang, lalu clear app data jika masih bermasalah. |
+| `SocketException` / `Connection refused` | Backend tidak aktif atau URL ngrok salah. | Jalankan backend, aktifkan ngrok, lalu update `baseUrl`. |
+| Error setelah clone atau pindah device | File `*.g.dart` belum dibuat di environment baru. | Jalankan `flutter pub get` lalu generate Hive adapter. |
 
-**Masalah:**
-
-```text
-HTTP 429 Too Many Requests
-```
-
-**Penyebab:**
-
-Jikan API memiliki batas request. Error ini muncul ketika aplikasi mengirim terlalu banyak request dalam waktu singkat.
-
-**Solusi:**
-
-| Solusi | Keterangan |
-|---|---|
-| Tambahkan delay request | Hindari memanggil API berkali-kali dalam waktu singkat. |
-| Gunakan caching | Simpan data sementara agar tidak selalu request ulang. |
-| Batasi refresh otomatis | Hindari auto-refresh yang terlalu agresif. |
-| Tampilkan retry state | Beri opsi pengguna untuk mencoba ulang. |
-
-Contoh pendekatan retry sederhana:
-
-```dart
-Future<void> fetchAnimeWithDelay() async {
-  await Future.delayed(const Duration(seconds: 2));
-  await animeService.fetchAnime();
-}
-```
-
-### 2. Error Hive Adapter Tidak Ditemukan
-
-**Masalah:**
-
-```text
-HiveError: Cannot read, unknown typeId
-```
-
-Atau:
-
-```text
-Error: TypeAdapter not found
-```
-
-**Penyebab:**
-
-File adapter Hive belum dibuat atau belum terdaftar dengan benar.
-
-**Solusi:**
-
-Jalankan:
-
-```bash
-flutter pub run build_runner build --delete-conflicting-outputs
-```
-
-Lalu pastikan adapter sudah diregistrasikan di `main.dart`.
-
-Contoh:
-
-```dart
-Hive.registerAdapter(FavoriteModelAdapter());
-Hive.registerAdapter(HistoryModelAdapter());
-```
-
-### 3. Error Setelah Pindah Device atau Clone Ulang
-
-**Masalah:**
-
-Aplikasi berjalan normal di satu device, tetapi error setelah pindah device atau setelah project di-clone ulang.
-
-**Penyebab umum:**
-
-| Penyebab | Solusi |
-|---|---|
-| File `*.g.dart` belum tersedia | Jalankan build_runner. |
-| Hive box belum terinisialisasi | Periksa inisialisasi Hive di `main.dart`. |
-| Adapter belum diregistrasikan | Pastikan semua adapter dipanggil sebelum membuka box. |
-| Data lama tidak kompatibel | Clear app data atau uninstall aplikasi dari device. |
-
-Perintah yang disarankan:
+Perintah reset development yang sering dipakai:
 
 ```bash
 flutter clean
@@ -521,89 +280,27 @@ flutter pub run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-### 4. Backend Tidak Dapat Diakses dari Aplikasi
-
-**Masalah:**
-
-```text
-SocketException
-Connection refused
-Failed host lookup
-```
-
-**Penyebab:**
-
-Aplikasi tidak dapat mengakses backend lokal atau URL ngrok tidak aktif.
-
-**Solusi:**
-
-| Langkah | Keterangan |
-|---|---|
-| Pastikan backend berjalan | Jalankan backend lokal terlebih dahulu. |
-| Pastikan ngrok aktif | Jalankan `ngrok http <port>`. |
-| Update base URL | Ubah URL di `otakudesu_service.dart`. |
-| Gunakan HTTPS | Gunakan URL HTTPS dari ngrok. |
-| Cek koneksi device | Pastikan emulator/device memiliki internet. |
-
 ---
 
 ## Perintah Penting
 
 | Kebutuhan | Perintah |
 |---|---|
-| Install dependency Flutter | `flutter pub get` |
+| Install dependency | `flutter pub get` |
 | Generate Hive adapter | `flutter pub run build_runner build --delete-conflicting-outputs` |
-| Membersihkan build | `flutter clean` |
-| Menjalankan aplikasi | `flutter run` |
-| Melihat device | `flutter devices` |
-| Mengecek environment | `flutter doctor` |
-| Menjalankan ngrok | `ngrok http 3000` |
+| Jalankan aplikasi | `flutter run` |
+| Cek device | `flutter devices` |
+| Cek environment | `flutter doctor` |
+| Jalankan ngrok | `ngrok http 3000` |
 
 ---
 
-## Workflow Development
-
-```text
-1. Jalankan backend Otakudesu
-2. Jalankan ngrok
-3. Salin URL HTTPS ngrok
-4. Update baseUrl di otakudesu_service.dart
-5. Jalankan flutter pub get
-6. Generate Hive adapter
-7. Jalankan aplikasi dengan flutter run
-```
-
-Contoh lengkap:
-
-```bash
-flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
-flutter run
-```
-
----
-
-## Catatan Pengembangan
+## Catatan
 
 - URL ngrok gratis akan berubah setiap kali tunnel dijalankan ulang.
-- Jangan lupa memperbarui `baseUrl` di `otakudesu_service.dart` setelah URL ngrok berubah.
 - Setiap perubahan pada model Hive membutuhkan generate ulang adapter.
-- Hindari request berlebihan ke Jikan API untuk mencegah error rate limit.
-- Gunakan cache lokal jika data tidak perlu selalu diperbarui secara real-time.
-- Pastikan backend scraper berjalan sebelum membuka fitur streaming.
-
----
-
-## Status Project
-
-| Komponen | Status |
-|---|---|
-| Flutter App | Aktif dikembangkan |
-| Jikan Metadata Integration | Tersedia |
-| Otakudesu Backend Bridging | Tersedia |
-| Hive Favorite Storage | Tersedia |
-| Hive History Storage | Tersedia |
-| In-App Streaming | Tersedia |
+- Hindari request berlebihan ke Jikan API agar tidak terkena rate limit.
+- Pastikan backend scraper aktif sebelum membuka fitur streaming.
 
 ---
 
