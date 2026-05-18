@@ -106,25 +106,41 @@ class Responsive {
   static double iconSizeXLarge(BuildContext context) =>
       isMobile(context) ? 32 : 48;
 
-  /// Adaptive grid configurations
+  /// Adaptive grid configurations - optimized for anime cards
   static SliverGridDelegate gridDelegateSmall(BuildContext context) {
-    if (isMobile(context)) {
+    final width = screenWidth(context);
+
+    // Small phones (< 360px): 2 columns
+    if (width < 360) {
       return const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
+        childAspectRatio: 0.6,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      );
+    }
+    // Standard phones (360px - 599px): 3 columns
+    else if (width < 600) {
+      return const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
         childAspectRatio: 0.6,
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       );
-    } else if (isTablet(context)) {
+    }
+    // Tablets (600px - 1199px): 4 columns
+    else if (width < 1200) {
       return const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount: 4,
         childAspectRatio: 0.6,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       );
-    } else {
+    }
+    // Desktop (1200px+): 5 columns
+    else {
       return const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
+        crossAxisCount: 5,
         childAspectRatio: 0.6,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
@@ -133,26 +149,42 @@ class Responsive {
   }
 
   static SliverGridDelegate gridDelegateMedium(BuildContext context) {
-    if (isMobile(context)) {
+    final width = screenWidth(context);
+
+    // Small phones (< 360px): 2 columns
+    if (width < 360) {
       return const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      );
+    }
+    // Standard phones (360px - 599px): 3 columns
+    else if (width < 600) {
+      return const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      );
+    }
+    // Tablets (600px - 1199px): 4 columns
+    else if (width < 1200) {
+      return const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
         childAspectRatio: 0.75,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       );
-    } else if (isTablet(context)) {
-      return const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-      );
-    } else {
+    }
+    // Desktop (1200px+): 5 columns
+    else {
       return const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 5,
         childAspectRatio: 0.75,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
       );
     }
   }
@@ -216,12 +248,18 @@ class Responsive {
     return 200;
   }
 
-  /// Number of columns for multi-column layouts
+  /// Number of columns for multi-column layouts - optimized for mobile
   static int adaptiveColumnCount(BuildContext context, {int minColumns = 1}) {
-    if (isDesktop(context)) return 4;
-    if (isTablet(context)) return 3;
-    if (isMobile(context) && screenWidth(context) > 480) return 2;
-    return minColumns;
+    final width = screenWidth(context);
+
+    // Small phones (< 360px): 2 columns minimum
+    if (width < 360) return 2;
+    // Standard phones (360px - 599px): 3 columns
+    if (width < 600) return 3;
+    // Tablets (600px - 1199px): 4 columns
+    if (width < 1200) return 4;
+    // Desktop (1200px+): 4-5 columns
+    return 5;
   }
 }
 
