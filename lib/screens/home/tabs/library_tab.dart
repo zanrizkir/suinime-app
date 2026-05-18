@@ -257,7 +257,7 @@ class _LibraryTabState extends State<LibraryTab> {
                     ? Image.network(
                         item.imageUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           color: AppColors.darkSurface,
                           child: const Icon(
                             Icons.broken_image,

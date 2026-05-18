@@ -1,10 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'search_history_hive.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
 
 class SearchHistoryHiveAdapter extends TypeAdapter<SearchHistoryHive> {
   @override

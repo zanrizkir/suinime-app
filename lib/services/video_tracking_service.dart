@@ -1,8 +1,28 @@
+import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'hive_service.dart';
 
 /// Service for tracking video playback and continue watching functionality
 class VideoTrackingService {
+  /// Record that an episode was opened successfully.
+  static Future<void> recordEpisodeWatch({
+    required int malId,
+    required String animeTitle,
+    required String imageUrl,
+    required int episodeNumber,
+  }) async {
+    try {
+      await HiveService.addToWatchHistory(
+        malId: malId,
+        title: animeTitle,
+        imageUrl: imageUrl,
+        lastEpisode: episodeNumber,
+      );
+    } catch (e) {
+      debugPrint('Error recording watch history: $e');
+    }
+  }
+
   /// Save continue watching progress
   static Future<void> trackWatchProgress({
     required int malId,
@@ -28,16 +48,15 @@ class VideoTrackingService {
           duration: duration,
         );
 
-        // Also update watch history
-        await HiveService.addToWatchHistory(
+        await recordEpisodeWatch(
           malId: malId,
-          title: animeTitle,
+          animeTitle: animeTitle,
           imageUrl: imageUrl,
-          lastEpisode: episodeNumber,
+          episodeNumber: episodeNumber,
         );
       }
     } catch (e) {
-      print('Error tracking watch progress: $e');
+      debugPrint('Error tracking watch progress: $e');
     }
   }
 
@@ -50,7 +69,7 @@ class VideoTrackingService {
       }
       return null;
     } catch (e) {
-      print('Error getting resume position: $e');
+      debugPrint('Error getting resume position: $e');
       return null;
     }
   }
@@ -65,7 +84,7 @@ class VideoTrackingService {
       final progress = continueWatching.position / continueWatching.duration;
       return progress < 0.95;
     } catch (e) {
-      print('Error checking resume: $e');
+      debugPrint('Error checking resume: $e');
       return false;
     }
   }
@@ -75,7 +94,7 @@ class VideoTrackingService {
     try {
       await HiveService.removeContinueWatching(malId);
     } catch (e) {
-      print('Error marking as completed: $e');
+      debugPrint('Error marking as completed: $e');
     }
   }
 }

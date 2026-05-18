@@ -1,10 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'library_item_hive.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
 
 class LibraryItemHiveAdapter extends TypeAdapter<LibraryItemHive> {
   @override

@@ -256,6 +256,16 @@ class HiveService {
     int lastEpisode = 0,
   }) async {
     final box = Hive.box<WatchHistoryHive>(watchHistoryBox);
+    final existing = box.get(malId);
+
+    if (existing != null) {
+      existing.title = title.isNotEmpty ? title : existing.title;
+      existing.imageUrl = imageUrl.isNotEmpty ? imageUrl : existing.imageUrl;
+      existing.lastEpisode = lastEpisode;
+      existing.watchedAt = DateTime.now();
+      await existing.save();
+      return;
+    }
 
     final item = WatchHistoryHive(
       malId: malId,

@@ -488,7 +488,7 @@ class _DataStorageScreenState extends State<DataStorageScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _backupFiles.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final file = _backupFiles[index];
         final info = BackupRestoreService.getBackupFileInfo(file.path);
@@ -556,7 +556,7 @@ class _DataStorageScreenState extends State<DataStorageScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: frequencies.length,
-        separatorBuilder: (_, __) => Divider(
+        separatorBuilder: (_, _) => Divider(
           color: AppColors.border,
           height: 1,
           indent: 16,

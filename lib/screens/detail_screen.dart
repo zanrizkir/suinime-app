@@ -211,12 +211,23 @@ class _DetailScreenState extends State<DetailScreen> {
       });
 
       if (slug != null && slug.isNotEmpty) {
+        final info = detailData.isNotEmpty
+            ? detailData
+            : (widget.animeInfo ?? {});
+        final imageUrl = info['imageUrl']?.toString() ?? '';
+
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => VideoPlayerScreen(
+              malId: widget.malId,
               episodeSlug: slug,
               animeTitle: animeTitle,
+              imageUrl: imageUrl,
+              episodeNumber: episodeNumber,
+              availableEpisodes: episodes
+                  .map((episode) => Map<String, dynamic>.from(episode))
+                  .toList(),
             ),
           ),
         );
@@ -363,7 +374,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ? Image.network(
                             backdropUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorBuilder: (_, _, _) =>
                                 Container(color: AppColors.darkSurface),
                           )
                         : Container(color: AppColors.darkSurface),
@@ -431,7 +442,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             ? Image.network(
                                 imageUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (_, _, _) => Container(
                                   color: AppColors.darkSurface,
                                   child: const Icon(
                                     Icons.broken_image,
