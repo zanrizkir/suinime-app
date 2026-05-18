@@ -35,7 +35,7 @@ class AnimeGridCard extends StatelessWidget {
                   anime.imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: AppColors.darkSurface,
                     child: const Center(
                       child: Icon(

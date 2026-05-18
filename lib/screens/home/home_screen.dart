@@ -9,6 +9,7 @@ import '../search_screen.dart';
 import '../../widgets/custom_text_field.dart';
 import 'widgets/home_views.dart';
 import 'tabs/dashboard_tab.dart';
+import 'tabs/history_tab.dart';
 import 'tabs/library_tab.dart';
 import 'tabs/more_tab.dart';
 
@@ -24,7 +25,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int currentPage = 1;
   bool isLoading = false;
   List<AnimeModel> animeList = [];
-  List<Map<String, dynamic>> watchHistory = [];
   String selectedDay = 'Senin';
 
   final TextEditingController _searchEntryController = TextEditingController();
@@ -78,22 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
-    _loadWatchHistory();
   }
 
   @override
   void dispose() {
     _searchEntryController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadWatchHistory() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (mounted) {
-      setState(() {
-        watchHistory = [];
-      });
-    }
   }
 
   Future<void> _loadInitialData() async {
@@ -397,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildHomeBody(),
         _buildJadwalBody(),
         const LibraryTab(),
-        _buildHistoryBody(),
+        const HistoryTab(),
         _buildMoreBody(),
       ],
     );
@@ -482,39 +472,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  //==== RIWAYAT =====
-
-  Widget _buildHistoryBody() {
-    if (watchHistory.isEmpty) {
-      return const Center(
-        child: Text(
-          'Belum ada riwayat tontonan',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: watchHistory.length,
-      itemBuilder: (context, index) {
-        final item = watchHistory[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.darkSurface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            item['title']?.toString() ?? 'Untitled',
-            style: AppTextStyles.labelLarge,
-          ),
-        );
-      },
     );
   }
 
