@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
 import '../models/anime_model.dart';
-import '../services/api_service.dart';
+import '../services/live_search_notifier.dart';
+import '../services/search_history_notifier.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import 'detail_screen.dart';
@@ -14,45 +16,31 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<AnimeModel> _searchResults = [];
-  bool _isLoading = false;
-  bool _hasSearched = false;
-  String? _errorMessage;
+  bool _hasInteracted = false;
 
-  Future<void> _performSearch() async {
-    final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
 
-    setState(() {
-      _isLoading = true;
-      _hasSearched = true;
-      _errorMessage = null;
-      _searchResults = [];
-    });
+  void _onSearchChanged() {
+    final notifier = context.read<LiveSearchNotifier>();
+    notifier.onSearchQueryChanged(_searchController.text, debounceMs: 400);
 
-    try {
-      final results = await _apiService.searchAnime(query);
-      if (!mounted) return;
-
-      setState(() {
-        _searchResults = results;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+    if (!_hasInteracted && _searchController.text.isNotEmpty) {
+      setState(() => _hasInteracted = true);
+    }
+    if (_searchController.text.isEmpty) {
+      setState(() => _hasInteracted = false);
     }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    context.read<LiveSearchNotifier>().clearSearch();
     super.dispose();
   }
 
@@ -73,62 +61,55 @@ class _SearchScreenState extends State<SearchScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.white),
-            onPressed: _performSearch,
-          ),
-        ],
       ),
-      body: _buildBody(),
+      body: Consumer2<LiveSearchNotifier, SearchHistoryNotifier>(
+        builder: (context, liveSearch, searchHistory, _) {
+          return _buildBody(liveSearch, searchHistory);
+        },
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (!_hasSearched) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: AppColors.textTertiary),
-            SizedBox(height: 16),
-            Text(
-              'Cari anime favoritmu',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
+  Widget _buildBody(
+    LiveSearchNotifier liveSearch,
+    SearchHistoryNotifier searchHistory,
+  ) {
+    // Show initial state when user hasn't typed yet
+    if (!_hasInteracted) {
+      return _buildInitialState(searchHistory);
     }
 
-    if (_isLoading) {
+    // Show empty query state (user cleared the search)
+    if (liveSearch.currentQuery.isEmpty) {
+      return _buildInitialState(searchHistory);
+    }
+
+    // Show loading state
+    if (liveSearch.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
-    if (_errorMessage != null) {
+    // Show error state
+    if (liveSearch.errorMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 60,
-              ),
+              const Icon(Icons.error_outline, color: AppColors.error, size: 60),
               const SizedBox(height: 16),
               Text(
-                _errorMessage!,
+                liveSearch.errorMessage!,
                 style: const TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               CustomButton(
                 text: 'Coba Lagi',
-                onPressed: _performSearch,
+                onPressed: () => liveSearch.retrySearch(),
               ),
             ],
           ),
@@ -136,7 +117,8 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    if (_searchResults.isEmpty) {
+    // Show empty results
+    if (liveSearch.searchResults.isEmpty) {
       return const Center(
         child: Text(
           'Tidak ada anime ditemukan',
@@ -145,6 +127,80 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
+    // Show search results
+    return _buildSearchResults(liveSearch.searchResults);
+  }
+
+  Widget _buildInitialState(SearchHistoryNotifier searchHistory) {
+    final recentKeywords = searchHistory.recentKeywords;
+
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search, size: 64, color: AppColors.textTertiary),
+              const SizedBox(height: 16),
+              const Text(
+                'Cari anime favoritmu',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+              ),
+              if (recentKeywords.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pencarian Terakhir',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: recentKeywords.map((keyword) {
+                    return GestureDetector(
+                      onTap: () {
+                        _searchController.text = keyword;
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          keyword,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(List<AnimeModel> results) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTabletOrDesktop = constraints.maxWidth >= 600;
@@ -158,18 +214,18 @@ class _SearchScreenState extends State<SearchScreen> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: _searchResults.length,
+            itemCount: results.length,
             itemBuilder: (context, index) {
-              final anime = _searchResults[index];
+              final anime = results[index];
               return _buildGridCard(anime);
             },
           );
         } else {
           return ListView.builder(
             padding: const EdgeInsets.all(12),
-            itemCount: _searchResults.length,
+            itemCount: results.length,
             itemBuilder: (context, index) {
-              final anime = _searchResults[index];
+              final anime = results[index];
               return _buildListCard(anime);
             },
           );
@@ -179,6 +235,13 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _openDetail(AnimeModel anime) {
+    // Save search query to history
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      final searchHistory = context.read<SearchHistoryNotifier>();
+      searchHistory.addSearchKeyword(query);
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -269,10 +332,7 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Icon(
-                Icons.chevron_right,
-                color: AppColors.textTertiary,
-              ),
+              child: Icon(Icons.chevron_right, color: AppColors.textTertiary),
             ),
           ],
         ),
