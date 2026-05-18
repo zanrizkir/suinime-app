@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -8,6 +9,7 @@ class CustomButton extends StatelessWidget {
   final bool isOutlined;
   final IconData? icon;
   final Color? color;
+  final double? minWidth;
 
   const CustomButton({
     super.key,
@@ -17,6 +19,7 @@ class CustomButton extends StatelessWidget {
     this.isOutlined = false,
     this.icon,
     this.color,
+    this.minWidth,
   });
 
   Color get _baseColor => color ?? AppColors.primary;
@@ -54,23 +57,27 @@ class CustomButton extends StatelessWidget {
   }
 
   ButtonStyle get _elevatedStyle => ElevatedButton.styleFrom(
-        backgroundColor: _baseColor,
-        foregroundColor: AppColors.white,
-        disabledBackgroundColor: _baseColor.withValues(alpha: 0.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-      );
+    backgroundColor: _baseColor,
+    foregroundColor: AppColors.white,
+    disabledBackgroundColor: _baseColor.withValues(alpha: 0.5),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+    minimumSize: Size(
+      minWidth ?? Responsive.minTouchTarget,
+      Responsive.minTouchTarget,
+    ),
+  );
 
   ButtonStyle get _outlinedStyle => OutlinedButton.styleFrom(
-        foregroundColor: _baseColor,
-        side: BorderSide(color: _baseColor),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-      );
+    foregroundColor: _baseColor,
+    side: BorderSide(color: _baseColor),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+    minimumSize: Size(
+      minWidth ?? Responsive.minTouchTarget,
+      Responsive.minTouchTarget,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../../utils/responsive.dart';
 
 class PaginationControls extends StatelessWidget {
   final int currentPage;
@@ -15,58 +16,86 @@ class PaginationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padding = Responsive.paddingMedium(context);
+    final spacing = Responsive.spacingLarge(context);
+    final isSmallScreen = Responsive.isMobile(context);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: onPrevPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: AppColors.darkSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      padding: EdgeInsets.symmetric(vertical: padding, horizontal: padding),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: Responsive.minTouchTarget,
+              child: ElevatedButton(
+                onPressed: onPrevPage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.darkSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: padding,
+                    vertical: Responsive.paddingSmall(context),
+                  ),
+                ),
+                child: Text(
+                  isSmallScreen ? 'Prev' : 'Previous',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: Responsive.fontSizeSmall(context),
+                  ),
+                ),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
-            child: const Text(
-              'Previous',
-              style: TextStyle(color: AppColors.white),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary, width: 1),
-            ),
-            child: Text(
-              'Page $currentPage',
-              style: AppTextStyles.labelLarge,
-            ),
-          ),
-          const SizedBox(width: 16),
-          ElevatedButton(
-            onPressed: onNextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            SizedBox(width: spacing),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: padding,
+                vertical: Responsive.paddingSmall(context),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.darkSurface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary, width: 1),
+              ),
+              child: Text(
+                'Page $currentPage',
+                style: TextStyle(
+                  fontSize: Responsive.fontSizeSmall(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            child: const Text(
-              'Next',
-              style: TextStyle(color: AppColors.white),
+            SizedBox(width: spacing),
+            SizedBox(
+              height: Responsive.minTouchTarget,
+              child: ElevatedButton(
+                onPressed: onNextPage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: padding,
+                    vertical: Responsive.paddingSmall(context),
+                  ),
+                ),
+                child: Text(
+                  'Next',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontSize: Responsive.fontSizeSmall(context),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../../utils/responsive.dart';
 import 'anime_grid_card.dart';
 import 'pagination_controls.dart';
 import 'section_header.dart';
@@ -85,13 +86,11 @@ class HomeViews {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        childAspectRatio: 0.6,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.paddingMedium(context),
+        vertical: Responsive.spacingMedium(context),
       ),
+      gridDelegate: Responsive.gridDelegateSmall(context),
       itemCount: animeList.length,
       itemBuilder: (context, index) {
         final anime = animeList[index];
@@ -103,10 +102,7 @@ class HomeViews {
     );
   }
 
-  static void openDetail(
-    BuildContext context,
-    AnimeModel anime,
-  ) {
+  static void openDetail(BuildContext context, AnimeModel anime) {
     Navigator.push(
       context,
       MaterialPageRoute(
