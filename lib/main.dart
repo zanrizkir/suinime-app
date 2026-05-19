@@ -7,6 +7,7 @@ import 'screens/player_screen.dart';
 import 'services/api_service.dart';
 import 'services/library_service.dart';
 import 'services/search_history_notifier.dart';
+import 'services/live_search_notifier.dart';
 import 'services/hive_service.dart';
 
 void main() async {
@@ -29,6 +30,7 @@ class SuinimeApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => LibraryNotifier()),
         ChangeNotifierProvider(create: (_) => SearchHistoryNotifier()),
+        ChangeNotifierProvider(create: (_) => LiveSearchNotifier()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

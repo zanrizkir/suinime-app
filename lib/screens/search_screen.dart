@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
 import '../models/anime_model.dart';
-import '../services/api_service.dart';
+import '../services/live_search_notifier.dart';
+import '../services/search_history_notifier.dart';
+import '../utils/responsive.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import 'detail_screen.dart';
@@ -14,45 +17,31 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<AnimeModel> _searchResults = [];
-  bool _isLoading = false;
-  bool _hasSearched = false;
-  String? _errorMessage;
+  bool _hasInteracted = false;
 
-  Future<void> _performSearch() async {
-    final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
 
-    setState(() {
-      _isLoading = true;
-      _hasSearched = true;
-      _errorMessage = null;
-      _searchResults = [];
-    });
+  void _onSearchChanged() {
+    final notifier = context.read<LiveSearchNotifier>();
+    notifier.onSearchQueryChanged(_searchController.text, debounceMs: 400);
 
-    try {
-      final results = await _apiService.searchAnime(query);
-      if (!mounted) return;
-
-      setState(() {
-        _searchResults = results;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+    if (!_hasInteracted && _searchController.text.isNotEmpty) {
+      setState(() => _hasInteracted = true);
+    }
+    if (_searchController.text.isEmpty) {
+      setState(() => _hasInteracted = false);
     }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    context.read<LiveSearchNotifier>().clearSearch();
     super.dispose();
   }
 
@@ -73,62 +62,59 @@ class _SearchScreenState extends State<SearchScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.white),
-            onPressed: _performSearch,
-          ),
-        ],
       ),
-      body: _buildBody(),
+      body: Consumer2<LiveSearchNotifier, SearchHistoryNotifier>(
+        builder: (context, liveSearch, searchHistory, _) {
+          return _buildBody(liveSearch, searchHistory);
+        },
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (!_hasSearched) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: AppColors.textTertiary),
-            SizedBox(height: 16),
-            Text(
-              'Cari anime favoritmu',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
+  Widget _buildBody(
+    LiveSearchNotifier liveSearch,
+    SearchHistoryNotifier searchHistory,
+  ) {
+    // Show initial state when user hasn't typed yet
+    if (!_hasInteracted) {
+      return _buildInitialState(searchHistory);
     }
 
-    if (_isLoading) {
+    // Show empty query state (user cleared the search)
+    if (liveSearch.currentQuery.isEmpty) {
+      return _buildInitialState(searchHistory);
+    }
+
+    // Show loading state
+    if (liveSearch.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
-    if (_errorMessage != null) {
+    // Show error state
+    if (liveSearch.errorMessage != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(Responsive.paddingLarge(context)),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 color: AppColors.error,
-                size: 60,
+                size: Responsive.iconSizeXLarge(context),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: Responsive.spacingLarge(context)),
               Text(
-                _errorMessage!,
+                liveSearch.errorMessage!,
                 style: const TextStyle(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: Responsive.spacingLarge(context)),
               CustomButton(
                 text: 'Coba Lagi',
-                onPressed: _performSearch,
+                onPressed: () => liveSearch.retrySearch(),
               ),
             ],
           ),
@@ -136,7 +122,8 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    if (_searchResults.isEmpty) {
+    // Show empty results
+    if (liveSearch.searchResults.isEmpty) {
       return const Center(
         child: Text(
           'Tidak ada anime ditemukan',
@@ -145,40 +132,106 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isTabletOrDesktop = constraints.maxWidth >= 600;
+    // Show search results
+    return _buildSearchResults(liveSearch.searchResults);
+  }
 
-        if (isTabletOrDesktop) {
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _searchResults.length,
-            itemBuilder: (context, index) {
-              final anime = _searchResults[index];
-              return _buildGridCard(anime);
-            },
-          );
-        } else {
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: _searchResults.length,
-            itemBuilder: (context, index) {
-              final anime = _searchResults[index];
-              return _buildListCard(anime);
-            },
-          );
-        }
+  Widget _buildInitialState(SearchHistoryNotifier searchHistory) {
+    final recentKeywords = searchHistory.recentKeywords;
+
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(Responsive.paddingLarge(context)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search,
+                size: Responsive.iconSizeXLarge(context),
+                color: AppColors.textTertiary,
+              ),
+              SizedBox(height: Responsive.spacingLarge(context)),
+              Text(
+                'Cari anime favoritmu',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: Responsive.fontSizeLarge(context),
+                ),
+              ),
+              if (recentKeywords.isNotEmpty) ...[
+                SizedBox(height: Responsive.spacingXLarge(context)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pencarian Terakhir',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: Responsive.fontSizeMedium(context),
+                    ),
+                  ),
+                ),
+                SizedBox(height: Responsive.spacingMedium(context)),
+                Wrap(
+                  spacing: Responsive.spacingSmall(context),
+                  runSpacing: Responsive.spacingSmall(context),
+                  children: recentKeywords.map((keyword) {
+                    return GestureDetector(
+                      onTap: () {
+                        _searchController.text = keyword;
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Responsive.paddingMedium(context),
+                          vertical: Responsive.paddingSmall(context),
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          keyword,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: Responsive.fontSizeSmall(context),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(List<AnimeModel> results) {
+    return GridView.builder(
+      padding: EdgeInsets.all(Responsive.paddingMedium(context)),
+      gridDelegate: Responsive.gridDelegateSmall(context),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final anime = results[index];
+        return _buildGridCard(anime);
       },
     );
   }
 
   void _openDetail(AnimeModel anime) {
+    // Save search query to history
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      final searchHistory = context.read<SearchHistoryNotifier>();
+      searchHistory.addSearchKeyword(query);
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -189,92 +242,6 @@ class _SearchScreenState extends State<SearchScreen> {
             'imageUrl': anime.imageUrl,
             'score': anime.score,
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildListCard(AnimeModel anime) {
-    return GestureDetector(
-      onTap: () => _openDetail(anime),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.darkSurface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-              child: Image.network(
-                anime.imageUrl,
-                width: 80,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 80,
-                    height: 120,
-                    color: AppColors.darkSurface,
-                    child: const Icon(
-                      Icons.broken_image,
-                      color: AppColors.textTertiary,
-                    ),
-                  );
-                },
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (anime.score != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.warning,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            anime.score!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Icon(
-                Icons.chevron_right,
-                color: AppColors.textTertiary,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -291,64 +258,79 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              child: Image.network(
-                anime.imageUrl,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: AppColors.darkSurface,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: AppColors.textTertiary,
+            // Poster image - flex 7
+            Expanded(
+              flex: 7,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: Image.network(
+                  anime.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: AppColors.darkSurface,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
+            // Content section - flex 3 (title + rating)
             Expanded(
+              flex: 3,
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(Responsive.paddingSmall(context)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                    // Title - bounded in Expanded
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          anime.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: Responsive.fontSizeSmall(context),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    // Rating - pinned at bottom
                     if (anime.score != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.warning,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            anime.score!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: Responsive.spacingXSmall(context),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: AppColors.warning,
+                              size: Responsive.iconSizeSmall(context),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: Responsive.spacingXSmall(context)),
+                            Text(
+                              anime.score!.toStringAsFixed(1),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: Responsive.fontSizeXSmall(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),

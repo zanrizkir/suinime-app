@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
@@ -25,9 +26,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
   bool _obscureText = true;
 
   OutlineInputBorder _border(Color color) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: color),
-      );
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: color),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -35,21 +36,31 @@ class _CustomTextFieldState extends State<CustomTextField> {
       controller: widget.controller,
       obscureText: widget.isPassword && _obscureText,
       keyboardType: widget.keyboardType,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: Responsive.fontSizeMedium(context),
+      ),
       decoration: InputDecoration(
         hintText: widget.hintText,
-        hintStyle: const TextStyle(color: AppColors.textHint),
+        hintStyle: TextStyle(
+          color: AppColors.textHint,
+          fontSize: Responsive.fontSizeMedium(context),
+        ),
         filled: true,
         fillColor: AppColors.darkSurface,
         prefixIcon: widget.prefixIcon != null
-            ? Icon(widget.prefixIcon, color: AppColors.textSecondary)
+            ? Icon(
+                widget.prefixIcon,
+                color: AppColors.textSecondary,
+                size: Responsive.iconSizeMedium(context),
+              )
             : null,
         suffixIcon: widget.isPassword
             ? IconButton(
                 icon: Icon(
                   _obscureText ? Icons.visibility_off : Icons.visibility,
                   color: AppColors.textSecondary,
-                  size: 20,
+                  size: Responsive.iconSizeMedium(context),
                 ),
                 onPressed: () {
                   setState(() {
@@ -62,9 +73,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
         focusedBorder: _border(AppColors.primary),
         errorBorder: _border(AppColors.error),
         focusedErrorBorder: _border(AppColors.error),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: Responsive.paddingMedium(context),
+          vertical: Responsive.paddingMedium(context),
         ),
       ),
     );
