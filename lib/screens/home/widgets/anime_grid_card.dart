@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../../utils/responsive.dart';
 
 class AnimeGridCard extends StatelessWidget {
   final AnimeModel anime;
   final VoidCallback onTap;
 
-  const AnimeGridCard({
-    super.key,
-    required this.anime,
-    required this.onTap,
-  });
+  const AnimeGridCard({super.key, required this.anime, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +21,7 @@ class AnimeGridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Poster image - takes up most space
             Expanded(
               flex: 7,
               child: ClipRRect(
@@ -58,34 +56,53 @@ class AnimeGridCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Content section - title and rating
             Expanded(
               flex: 3,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+                padding: EdgeInsets.all(Responsive.paddingSmall(context)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelMedium,
+                    // Title - compact and bounded
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          anime.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: Responsive.fontSizeSmall(context),
+                          ),
+                        ),
+                      ),
                     ),
+                    // Rating - always visible at bottom
                     if (anime.score != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.warning,
-                            size: 12,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            anime.score!.toStringAsFixed(1),
-                            style: AppTextStyles.caption,
-                          ),
-                        ],
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: Responsive.spacingXSmall(context),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: AppColors.warning,
+                              size: Responsive.iconSizeSmall(context),
+                            ),
+                            SizedBox(width: Responsive.spacingXSmall(context)),
+                            Text(
+                              anime.score!.toStringAsFixed(1),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: Responsive.fontSizeXSmall(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),

@@ -81,6 +81,10 @@ class Responsive {
       isMobile(context) ? 16 : 24;
 
   /// Adaptive font sizes
+  /// Adaptive font sizes
+  static double fontSizeXSmall(BuildContext context) =>
+      isMobile(context) ? 10 : 11;
+
   static double fontSizeSmall(BuildContext context) =>
       isMobile(context) ? 12 : 14;
 

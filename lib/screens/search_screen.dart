@@ -213,16 +213,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults(List<AnimeModel> results) {
-    final crossAxisCount = Responsive.adaptiveColumnCount(context);
-
     return GridView.builder(
       padding: EdgeInsets.all(Responsive.paddingMedium(context)),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: Responsive.spacingMedium(context),
-        mainAxisSpacing: Responsive.spacingMedium(context),
-      ),
+      gridDelegate: Responsive.gridDelegateSmall(context),
       itemCount: results.length,
       itemBuilder: (context, index) {
         final anime = results[index];
@@ -265,64 +258,79 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              child: Image.network(
-                anime.imageUrl,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: AppColors.darkSurface,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: AppColors.textTertiary,
+            // Poster image - flex 7
+            Expanded(
+              flex: 7,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: Image.network(
+                  anime.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: AppColors.darkSurface,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
+            // Content section - flex 3 (title + rating)
             Expanded(
+              flex: 3,
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(Responsive.paddingSmall(context)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                    // Title - bounded in Expanded
+                    Expanded(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          anime.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: Responsive.fontSizeSmall(context),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    // Rating - pinned at bottom
                     if (anime.score != null)
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: AppColors.warning,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            anime.score!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: Responsive.spacingXSmall(context),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: AppColors.warning,
+                              size: Responsive.iconSizeSmall(context),
                             ),
-                          ),
-                        ],
+                            SizedBox(width: Responsive.spacingXSmall(context)),
+                            Text(
+                              anime.score!.toStringAsFixed(1),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: Responsive.fontSizeXSmall(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
