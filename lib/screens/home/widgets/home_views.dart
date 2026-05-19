@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../utils/responsive.dart';
-import 'anime_grid_card.dart';
+import 'anime_card.dart';
 import 'pagination_controls.dart';
 import 'section_header.dart';
 import '../../detail_screen.dart';
@@ -94,10 +94,7 @@ class HomeViews {
       itemCount: animeList.length,
       itemBuilder: (context, index) {
         final anime = animeList[index];
-        return AnimeGridCard(
-          anime: anime,
-          onTap: () => openDetail(context, anime),
-        );
+        return AnimeCard(anime: anime, onTap: () => openDetail(context, anime));
       },
     );
   }

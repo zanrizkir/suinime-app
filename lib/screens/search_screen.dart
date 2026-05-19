@@ -8,6 +8,7 @@ import '../utils/responsive.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import 'detail_screen.dart';
+import 'home/widgets/anime_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -248,97 +249,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildGridCard(AnimeModel anime) {
-    return GestureDetector(
-      onTap: () => _openDetail(anime),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.darkSurface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Poster image - flex 7
-            Expanded(
-              flex: 7,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: Image.network(
-                  anime.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: AppColors.darkSurface,
-                      child: const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            // Content section - flex 3 (title + rating)
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: EdgeInsets.all(Responsive.paddingSmall(context)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title - bounded in Expanded
-                    Expanded(
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Text(
-                          anime.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: Responsive.fontSizeSmall(context),
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Rating - pinned at bottom
-                    if (anime.score != null)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: Responsive.spacingXSmall(context),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.star,
-                              color: AppColors.warning,
-                              size: Responsive.iconSizeSmall(context),
-                            ),
-                            SizedBox(width: Responsive.spacingXSmall(context)),
-                            Text(
-                              anime.score!.toStringAsFixed(1),
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: Responsive.fontSizeXSmall(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return AnimeCard(anime: anime, onTap: () => _openDetail(anime));
   }
 }
