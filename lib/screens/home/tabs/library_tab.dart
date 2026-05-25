@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../models/library_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../services/library_service.dart';
 import '../../../utils/responsive.dart';
+import '../../../utils/model_converter.dart';
 import '../widgets/anime_card.dart';
 
 class LibraryTab extends StatefulWidget {
@@ -227,7 +229,7 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  Widget _buildAnimeGrid(List items) {
+  Widget _buildAnimeGrid(List<LibraryItem> items) {
     return GridView.builder(
       padding: EdgeInsets.all(Responsive.paddingMedium(context)),
       gridDelegate: Responsive.gridDelegateSmall(context),
@@ -235,7 +237,7 @@ class _LibraryTabState extends State<LibraryTab> {
       itemBuilder: (context, index) {
         final item = items[index];
         return AnimeCard(
-          anime: item,
+          anime: item.toAnimeModel(),
           onTap: () {
             // Handle card tap if needed
             // For now, just acts as a visual display
