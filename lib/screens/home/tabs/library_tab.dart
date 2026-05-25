@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../models/anime_model.dart';
 import '../../../models/library_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../services/library_service.dart';
 import '../../../utils/responsive.dart';
 import '../../../utils/model_converter.dart';
 import '../widgets/anime_card.dart';
+import '../../detail_screen.dart';
 
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
@@ -236,15 +238,29 @@ class _LibraryTabState extends State<LibraryTab> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
+        final animeModel = item.toAnimeModel();
         return AnimeCard(
-          anime: item.toAnimeModel(),
-          onTap: () {
-            // Handle card tap if needed
-            // For now, just acts as a visual display
-          },
+          anime: animeModel,
+          onTap: () => _openDetail(animeModel),
           enableShadow: true,
         );
       },
+    );
+  }
+
+  void _openDetail(AnimeModel animeModel) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          malId: animeModel.malId,
+          animeInfo: {
+            'title': animeModel.title,
+            'imageUrl': animeModel.imageUrl,
+            'score': animeModel.score,
+          },
+        ),
+      ),
     );
   }
 
