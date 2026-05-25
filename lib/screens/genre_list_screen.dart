@@ -19,6 +19,8 @@ class _GenreListScreenState extends State<GenreListScreen> {
   bool isLoading = true;
   bool isGenreAnimeLoading = false;
   int currentPage = 1;
+  int totalPages = 1;
+  bool hasNextPage = false;
   Map<String, dynamic>? selectedGenre;
 
   @override
@@ -63,13 +65,15 @@ class _GenreListScreenState extends State<GenreListScreen> {
     });
 
     try {
-      final fetched = await _apiService.fetchAnimeByGenre(
+      final fetched = await _apiService.fetchAnimeByGenrePaginated(
         genreId,
         page: currentPage,
       );
       if (mounted) {
         setState(() {
-          genreAnimeList = fetched;
+          genreAnimeList = fetched.anime;
+          totalPages = fetched.totalPages;
+          hasNextPage = fetched.hasNextPage;
           isGenreAnimeLoading = false;
         });
       }
@@ -86,18 +90,60 @@ class _GenreListScreenState extends State<GenreListScreen> {
     }
   }
 
+  /// Group genres by their first letter (A-Z) or '#' for non-alphabetic
+  Map<String, List<Map<String, dynamic>>> _groupGenresByLetter(
+    List<Map<String, dynamic>> genres,
+  ) {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+
+    for (final genre in genres) {
+      final name = genre['name'] as String;
+      final firstChar = name.isNotEmpty ? name[0] : '';
+      final letter = RegExp(r'^[a-zA-Z]').hasMatch(firstChar)
+          ? firstChar.toUpperCase()
+          : '#';
+
+      grouped.putIfAbsent(letter, () => []);
+      grouped[letter]!.add(genre);
+    }
+
+    // Sort each group alphabetically
+    grouped.forEach((key, genreList) {
+      genreList.sort(
+        (a, b) => (a['name'] as String).compareTo(b['name'] as String),
+      );
+    });
+
+    return grouped;
+  }
+
   void _selectGenre(Map<String, dynamic> genre) {
     setState(() {
       selectedGenre = genre;
       currentPage = 1;
       genreAnimeList = [];
+      totalPages = 1;
+      hasNextPage = false;
     });
     _fetchGenreAnime(genre['id'] as int);
   }
 
   void _nextPage() {
+    if (!hasNextPage && currentPage >= totalPages) return;
     setState(() {
       currentPage++;
+      genreAnimeList = [];
+    });
+    if (selectedGenre != null) {
+      _fetchGenreAnime(selectedGenre!['id'] as int);
+    }
+  }
+
+  void _goToPage(int page) {
+    final targetPage = page < 1 ? 1 : (page > totalPages ? totalPages : page);
+    if (targetPage == currentPage) return;
+    setState(() {
+      currentPage = targetPage;
       genreAnimeList = [];
     });
     if (selectedGenre != null) {
@@ -114,6 +160,112 @@ class _GenreListScreenState extends State<GenreListScreen> {
     if (selectedGenre != null) {
       _fetchGenreAnime(selectedGenre!['id'] as int);
     }
+  }
+
+  /// Build grouped genre list with alphabetical sections
+  Widget _buildGroupedGenreList() {
+    final groupedGenres = _groupGenresByLetter(genres);
+    final sortedKeys = groupedGenres.keys.toList();
+
+    // Put '#' first if it exists, then sort A-Z
+    sortedKeys.sort((a, b) {
+      if (a == '#') return -1;
+      if (b == '#') return 1;
+      return a.compareTo(b);
+    });
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(12),
+      itemCount: sortedKeys.length,
+      itemBuilder: (context, index) {
+        final letter = sortedKeys[index];
+        final genresInGroup = groupedGenres[letter]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+              child: Text(
+                letter,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            // Genres grid for this letter
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const spacing = 8.0;
+                final columns = (constraints.maxWidth / 132)
+                    .floor()
+                    .clamp(2, 4)
+                    .toInt();
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: genresInGroup.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    mainAxisExtent: 40,
+                  ),
+                  itemBuilder: (context, genreIndex) {
+                    final genre = genresInGroup[genreIndex];
+                    final isSelected = selectedGenre?['id'] == genre['id'];
+
+                    return GestureDetector(
+                      onTap: () => _selectGenre(genre),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.border.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          genre['name'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.dark
+                                : AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -153,73 +305,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
                       ),
                     )
                   else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const spacing = 8.0;
-                        final columns = (constraints.maxWidth / 132)
-                            .floor()
-                            .clamp(2, 4)
-                            .toInt();
-
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(12),
-                          itemCount: genres.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: spacing,
-                                mainAxisSpacing: spacing,
-                                mainAxisExtent: 40,
-                              ),
-                          itemBuilder: (context, index) {
-                            final genre = genres[index];
-                            final isSelected =
-                                selectedGenre?['id'] == genre['id'];
-                            return GestureDetector(
-                              onTap: () => _selectGenre(genre),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.darkSurface,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.border.withValues(
-                                            alpha: 0.5,
-                                          ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  genre['name'],
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? AppColors.dark
-                                        : AppColors.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                    _buildGroupedGenreList(),
                   if (selectedGenre != null) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
@@ -258,8 +344,11 @@ class _GenreListScreenState extends State<GenreListScreen> {
                       ),
                       PaginationControls(
                         currentPage: currentPage,
+                        totalPages: totalPages,
+                        hasNextPage: hasNextPage,
                         onPrevPage: currentPage == 1 ? null : _prevPage,
                         onNextPage: _nextPage,
+                        onPageSelected: _goToPage,
                       ),
                     ],
                   ],

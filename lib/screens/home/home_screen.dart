@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/anime_model.dart';
+import '../../models/paginated_anime_response.dart';
 import '../../config/theme/app_theme.dart';
 import '../dashboard_anime_list_screen.dart';
 import '../search_screen.dart';
@@ -26,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = false;
   List<AnimeModel> animeList = [];
   String selectedDay = 'Senin';
+  int totalPages = 1;
+  bool hasNextPage = false;
 
   final TextEditingController _searchEntryController = TextEditingController();
 
@@ -112,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       String url = '';
+      final requestedPage = currentPage;
 
       if (selectedFilter == 'Home') {
         url = '$baseUrl/top/anime?page=$currentPage';
@@ -136,8 +140,17 @@ class _HomeScreenState extends State<HomeScreen> {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'] ?? [];
-        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final paginated = PaginatedAnimeResponse.fromJson(
+          jsonData,
+          requestedPage: requestedPage,
+        );
+        fetched = paginated.anime;
+        if (mounted) {
+          setState(() {
+            totalPages = paginated.totalPages;
+            hasNextPage = paginated.hasNextPage;
+          });
+        }
       } else {
         debugPrint('Failed to load data: ${response.statusCode}');
       }
@@ -168,6 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       selectedFilter = filter;
       currentPage = 1;
+      totalPages = 1;
+      hasNextPage = false;
       animeList = [];
     });
     _fetchData();
@@ -178,14 +193,27 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       selectedDay = day;
       currentPage = 1;
+      totalPages = 1;
+      hasNextPage = false;
       animeList = [];
     });
     _fetchData();
   }
 
   void _nextPage() {
+    if (!hasNextPage && currentPage >= totalPages) return;
     setState(() {
       currentPage++;
+      animeList = [];
+    });
+    _fetchData();
+  }
+
+  void _goToPage(int page) {
+    final targetPage = page < 1 ? 1 : (page > totalPages ? totalPages : page);
+    if (targetPage == currentPage) return;
+    setState(() {
+      currentPage = targetPage;
       animeList = [];
     });
     _fetchData();
@@ -467,8 +495,11 @@ class _HomeScreenState extends State<HomeScreen> {
             animeList: animeList,
             isLoading: isLoading,
             currentPage: currentPage,
+            totalPages: totalPages,
             onPrevPage: currentPage == 1 ? null : _prevPage,
             onNextPage: _nextPage,
+            onPageSelected: _goToPage,
+            hasNextPage: hasNextPage,
           ),
         ),
       ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
+import '../../../models/paginated_anime_response.dart';
 import '../../../config/theme/app_theme.dart';
 import '../widgets/home_views.dart';
 
@@ -17,6 +18,8 @@ class _ScheduleTabState extends State<ScheduleTab> {
   bool isLoading = false;
   List<AnimeModel> animeList = [];
   String selectedDay = 'Senin';
+  int totalPages = 1;
+  bool hasNextPage = false;
 
   final String baseUrl = 'https://api.jikan.moe/v4';
 
@@ -51,13 +54,16 @@ class _ScheduleTabState extends State<ScheduleTab> {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'];
-        final List<AnimeModel> fetched = dataList
-            .map((item) => AnimeModel.fromJson(item))
-            .toList();
+        final paginated = PaginatedAnimeResponse.fromJson(
+          jsonData,
+          requestedPage: currentPage,
+        );
+        final fetched = paginated.anime;
         if (mounted) {
           setState(() {
             animeList = fetched;
+            totalPages = paginated.totalPages;
+            hasNextPage = paginated.hasNextPage;
             isLoading = false;
           });
         }
@@ -81,14 +87,27 @@ class _ScheduleTabState extends State<ScheduleTab> {
     setState(() {
       selectedDay = day;
       currentPage = 1;
+      totalPages = 1;
+      hasNextPage = false;
       animeList = [];
     });
     _fetchData();
   }
 
   void _nextPage() {
+    if (!hasNextPage && currentPage >= totalPages) return;
     setState(() {
       currentPage++;
+      animeList = [];
+    });
+    _fetchData();
+  }
+
+  void _goToPage(int page) {
+    final targetPage = page < 1 ? 1 : (page > totalPages ? totalPages : page);
+    if (targetPage == currentPage) return;
+    setState(() {
+      currentPage = targetPage;
       animeList = [];
     });
     _fetchData();
@@ -161,8 +180,11 @@ class _ScheduleTabState extends State<ScheduleTab> {
             animeList: animeList,
             isLoading: isLoading,
             currentPage: currentPage,
+            totalPages: totalPages,
             onPrevPage: currentPage == 1 ? null : _prevPage,
             onNextPage: _nextPage,
+            onPageSelected: _goToPage,
+            hasNextPage: hasNextPage,
           ),
         ),
       ],

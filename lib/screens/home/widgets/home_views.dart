@@ -47,8 +47,11 @@ class HomeViews {
     required List<AnimeModel> animeList,
     required bool isLoading,
     required int currentPage,
+    required int totalPages,
     required VoidCallback? onPrevPage,
     required VoidCallback onNextPage,
+    required ValueChanged<int> onPageSelected,
+    bool? hasNextPage,
   }) {
     if (isLoading && animeList.isEmpty) {
       return const Center(
@@ -72,6 +75,9 @@ class HomeViews {
             currentPage: currentPage,
             onPrevPage: onPrevPage,
             onNextPage: onNextPage,
+            totalPages: totalPages,
+            hasNextPage: hasNextPage,
+            onPageSelected: onPageSelected,
           ),
           const SizedBox(height: 20),
         ],
