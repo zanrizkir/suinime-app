@@ -4,12 +4,14 @@ class PaginatedAnimeResponse {
   final List<AnimeModel> anime;
   final int currentPage;
   final int totalPages;
+  final int perPage;
   final bool hasNextPage;
 
   const PaginatedAnimeResponse({
     required this.anime,
     required this.currentPage,
     required this.totalPages,
+    required this.perPage,
     required this.hasNextPage,
   });
 
@@ -42,6 +44,7 @@ class PaginatedAnimeResponse {
           .whereType<int>()
           .where((page) => page > 0)
           .fold<int>(1, (maxPage, page) => page > maxPage ? page : maxPage),
+      perPage: perPage > 0 ? perPage : anime.length,
       hasNextPage: hasNextPage,
     );
   }

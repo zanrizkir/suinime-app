@@ -30,6 +30,7 @@ class _DashboardTabState extends State<DashboardTab> {
   List<AnimeModel> latestAnimeList = [];
   List<Map<String, dynamic>> watchHistory = [];
   int totalPages = 1;
+  int perPage = 25;
   bool hasNextPage = false;
 
   final String baseUrl = 'https://api.jikan.moe/v4';
@@ -68,6 +69,7 @@ class _DashboardTabState extends State<DashboardTab> {
       setState(() {
         currentPage = 1;
         totalPages = 1;
+        perPage = 25;
         hasNextPage = false;
         animeList = [];
       });
@@ -155,6 +157,7 @@ class _DashboardTabState extends State<DashboardTab> {
         if (mounted && widget.filter == filter) {
           setState(() {
             totalPages = paginated.totalPages;
+            perPage = paginated.perPage > 0 ? paginated.perPage : perPage;
             hasNextPage = paginated.hasNextPage;
           });
         }
@@ -366,6 +369,7 @@ class _DashboardTabState extends State<DashboardTab> {
             animeList: animeList.take(6).toList(),
             isLoading: isLoading,
             onSeeAll: widget.onTopAnimeSeeAll,
+            ranked: true,
           ),
           const SizedBox(height: 20),
         ],
@@ -376,12 +380,13 @@ class _DashboardTabState extends State<DashboardTab> {
   //==== TOP ANIME =====
 
   Widget _buildTopAnimeBody() {
-    return HomeViews.buildScrollableGridSection(
+    return HomeViews.buildScrollableRankedSection(
       context: context,
       animeList: animeList,
       isLoading: isLoading,
       currentPage: currentPage,
       totalPages: totalPages,
+      perPage: perPage,
       onPrevPage: currentPage == 1 ? null : _prevPage,
       onNextPage: _nextPage,
       onPageSelected: _goToPage,

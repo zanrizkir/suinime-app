@@ -165,6 +165,7 @@ class ApiService {
         anime: const [],
         currentPage: page,
         totalPages: page,
+        perPage: 0,
         hasNextPage: false,
       );
     }
