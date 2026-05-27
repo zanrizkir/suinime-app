@@ -159,6 +159,11 @@ class BackupRestoreService {
           (item) => {
             'keyword': item.keyword,
             'searchedAt': item.searchedAt.toIso8601String(),
+            'entryType': item.entryType,
+            'animeId': item.animeId,
+            'animeTitle': item.animeTitle,
+            'animeImageUrl': item.animeImageUrl,
+            'animeMetadata': item.animeMetadata,
           },
         )
         .toList();
@@ -264,8 +269,13 @@ class BackupRestoreService {
 
     for (final item in items) {
       final hiveItem = SearchHistoryHive(
-        keyword: item['keyword'] as String,
+        keyword: item['keyword'] as String? ?? '',
         searchedAt: DateTime.parse(item['searchedAt'] as String),
+        entryType: item['entryType'] as String? ?? 'keyword',
+        animeId: item['animeId'] as int?,
+        animeTitle: item['animeTitle'] as String?,
+        animeImageUrl: item['animeImageUrl'] as String?,
+        animeMetadata: item['animeMetadata'] as String?,
       );
       await box.add(hiveItem);
     }

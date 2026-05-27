@@ -11,19 +11,34 @@ class SearchHistoryHiveAdapter extends TypeAdapter<SearchHistoryHive> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SearchHistoryHive(
-      keyword: fields[0] as String,
+      keyword: fields[0] as String? ?? '',
       searchedAt: fields[1] as DateTime?,
+      entryType: fields[2] as String? ?? 'keyword',
+      animeId: fields[3] as int?,
+      animeTitle: fields[4] as String?,
+      animeImageUrl: fields[5] as String?,
+      animeMetadata: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SearchHistoryHive obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.keyword)
       ..writeByte(1)
-      ..write(obj.searchedAt);
+      ..write(obj.searchedAt)
+      ..writeByte(2)
+      ..write(obj.entryType)
+      ..writeByte(3)
+      ..write(obj.animeId)
+      ..writeByte(4)
+      ..write(obj.animeTitle)
+      ..writeByte(5)
+      ..write(obj.animeImageUrl)
+      ..writeByte(6)
+      ..write(obj.animeMetadata);
   }
 
   @override

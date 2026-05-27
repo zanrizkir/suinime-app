@@ -8,6 +8,10 @@ class CustomTextField extends StatefulWidget {
   final IconData? prefixIcon;
   final bool isPassword;
   final TextInputType keyboardType;
+  final bool autofocus;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
   const CustomTextField({
     super.key,
@@ -16,6 +20,10 @@ class CustomTextField extends StatefulWidget {
     this.prefixIcon,
     this.isPassword = false,
     this.keyboardType = TextInputType.text,
+    this.autofocus = false,
+    this.focusNode,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
@@ -34,8 +42,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
   Widget build(BuildContext context) {
     return TextField(
       controller: widget.controller,
+      focusNode: widget.focusNode,
+      autofocus: widget.autofocus,
       obscureText: widget.isPassword && _obscureText,
       keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      onSubmitted: widget.onSubmitted,
       style: TextStyle(
         color: AppColors.textPrimary,
         fontSize: Responsive.fontSizeMedium(context),

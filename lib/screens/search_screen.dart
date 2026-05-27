@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
@@ -20,17 +21,26 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  Timer? _keywordSaveTimer;
   bool _hasInteracted = false;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   void _onSearchChanged() {
     final notifier = context.read<LiveSearchNotifier>();
-    notifier.onSearchQueryChanged(_searchController.text, debounceMs: 400);
+    final query = _searchController.text;
+    notifier.onSearchQueryChanged(query, debounceMs: 400);
+    _scheduleKeywordSave(query);
 
     if (!_hasInteracted && _searchController.text.isNotEmpty) {
       setState(() => _hasInteracted = true);
@@ -40,8 +50,29 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  void _scheduleKeywordSave(String query) {
+    _keywordSaveTimer?.cancel();
+    final keyword = query.trim();
+    if (keyword.length < 2) return;
+
+    _keywordSaveTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (!mounted || _searchController.text.trim() != keyword) return;
+      context.read<SearchHistoryNotifier>().addSearchKeyword(keyword);
+    });
+  }
+
+  void _saveCurrentKeywordNow() {
+    _keywordSaveTimer?.cancel();
+    final keyword = _searchController.text.trim();
+    if (keyword.length >= 2) {
+      context.read<SearchHistoryNotifier>().addSearchKeyword(keyword);
+    }
+  }
+
   @override
   void dispose() {
+    _keywordSaveTimer?.cancel();
+    _searchFocusNode.dispose();
     _searchController.dispose();
     context.read<LiveSearchNotifier>().clearSearch();
     super.dispose();
@@ -54,9 +85,13 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: CustomTextField(
           controller: _searchController,
+          focusNode: _searchFocusNode,
+          autofocus: true,
           hintText: 'Cari anime favoritmu...',
           prefixIcon: Icons.search_rounded,
           keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => _saveCurrentKeywordNow(),
         ),
         backgroundColor: AppColors.darkSurface,
         elevation: 0,
@@ -141,73 +176,174 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildInitialState(SearchHistoryNotifier searchHistory) {
     final recentKeywords = searchHistory.recentKeywords;
 
-    return Center(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(Responsive.paddingLarge(context)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.search,
-                size: Responsive.iconSizeXLarge(context),
-                color: AppColors.textTertiary,
-              ),
-              SizedBox(height: Responsive.spacingLarge(context)),
-              Text(
-                'Cari anime favoritmu',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: Responsive.fontSizeLarge(context),
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(
+        Responsive.paddingLarge(context),
+        Responsive.paddingMedium(context),
+        Responsive.paddingLarge(context),
+        Responsive.safeBottomSpacing(context, minimum: 24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (recentKeywords.isNotEmpty) ...[
+            _buildSectionTitle('Pencarian Terakhir'),
+            SizedBox(height: Responsive.spacingMedium(context)),
+            Wrap(
+              spacing: Responsive.spacingSmall(context),
+              runSpacing: Responsive.spacingSmall(context),
+              children: recentKeywords.map((keyword) {
+                return GestureDetector(
+                  onTap: () {
+                    _searchController.text = keyword;
+                    _searchController.selection = TextSelection.collapsed(
+                      offset: keyword.length,
+                    );
+                    _searchFocusNode.requestFocus();
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Responsive.paddingMedium(context),
+                      vertical: Responsive.paddingSmall(context),
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      keyword,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: Responsive.fontSizeSmall(context),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+          if (searchHistory.recentAnime.isNotEmpty) ...[
+            if (recentKeywords.isNotEmpty)
+              SizedBox(height: Responsive.spacingXLarge(context)),
+            _buildSectionTitle('Baru Dibuka dari Pencarian'),
+            SizedBox(height: Responsive.spacingMedium(context)),
+            ...searchHistory.recentAnime.map(_buildRecentAnimeTile),
+          ],
+          if (!searchHistory.hasAnyHistory)
+            SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.55,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.search,
+                      size: Responsive.iconSizeXLarge(context),
+                      color: AppColors.textTertiary,
+                    ),
+                    SizedBox(height: Responsive.spacingLarge(context)),
+                    Text(
+                      'Cari anime favoritmu',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: Responsive.fontSizeLarge(context),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (recentKeywords.isNotEmpty) ...[
-                SizedBox(height: Responsive.spacingXLarge(context)),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Pencarian Terakhir',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: Responsive.fontSizeMedium(context),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w700,
+        fontSize: Responsive.fontSizeMedium(context),
+      ),
+    );
+  }
+
+  Widget _buildRecentAnimeTile(SearchAnimeHistoryEntry item) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: Responsive.spacingMedium(context)),
+      child: Material(
+        color: AppColors.darkSurface,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _openHistoryDetail(item),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    item.imageUrl,
+                    width: 48,
+                    height: 64,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      width: 48,
+                      height: 64,
+                      color: AppColors.darkBg,
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: AppColors.textTertiary,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
-                SizedBox(height: Responsive.spacingMedium(context)),
-                Wrap(
-                  spacing: Responsive.spacingSmall(context),
-                  runSpacing: Responsive.spacingSmall(context),
-                  children: recentKeywords.map((keyword) {
-                    return GestureDetector(
-                      onTap: () {
-                        _searchController.text = keyword;
-                      },
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: Responsive.paddingMedium(context),
-                          vertical: Responsive.paddingSmall(context),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: Responsive.fontSizeMedium(context),
                         ),
-                        decoration: BoxDecoration(
-                          color: AppColors.darkSurface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Text(
-                          keyword,
+                      ),
+                      if (item.metadata != null &&
+                          item.metadata!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.metadata!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: Responsive.fontSizeSmall(context),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textTertiary,
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -248,12 +384,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _openDetail(AnimeModel anime) {
-    // Save search query to history
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) {
-      final searchHistory = context.read<SearchHistoryNotifier>();
-      searchHistory.addSearchKeyword(query);
-    }
+    _saveCurrentKeywordNow();
+    context.read<SearchHistoryNotifier>().addSearchAnime(anime);
 
     Navigator.push(
       context,
@@ -264,6 +396,21 @@ class _SearchScreenState extends State<SearchScreen> {
             'title': anime.title,
             'imageUrl': anime.imageUrl,
             'score': anime.score,
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openHistoryDetail(SearchAnimeHistoryEntry item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          malId: item.animeId,
+          animeInfo: {
+            'title': item.title,
+            'imageUrl': item.imageUrl,
           },
         ),
       ),

@@ -317,11 +317,24 @@ class HiveService {
 
   /// Get unique search keywords
   static List<String> getSearchKeywords({int limit = 20}) {
-    final history = getSearchHistory(limit: limit * 2);
+    final history = getSearchHistory(limit: limit * 3)
+        .where((item) => item.isKeyword);
     final seen = <String>{};
     return history
         .map((item) => item.keyword)
-        .where((keyword) => seen.add(keyword))
+        .where((keyword) => keyword.trim().isNotEmpty)
+        .where((keyword) => seen.add(keyword.toLowerCase()))
+        .take(limit)
+        .toList();
+  }
+
+  static List<SearchHistoryHive> getSearchAnimeHistory({int limit = 20}) {
+    final history = getSearchHistory(limit: limit * 3)
+        .where((item) => item.isAnime && item.animeId != null)
+        .toList();
+    final seen = <int>{};
+    return history
+        .where((item) => seen.add(item.animeId!))
         .take(limit)
         .toList();
   }
@@ -329,13 +342,61 @@ class HiveService {
   /// Add search keyword
   static Future<void> addSearchKeyword(String keyword) async {
     final box = Hive.box<SearchHistoryHive>(searchHistoryBox);
+    final normalized = keyword.trim();
+    if (normalized.isEmpty) return;
 
-    final item = SearchHistoryHive(
-      keyword: keyword.trim(),
-      searchedAt: DateTime.now(),
+    final existingKey = box.keys.firstWhere(
+      (key) {
+        final item = box.get(key);
+        return item?.isKeyword == true &&
+            item!.keyword.toLowerCase() == normalized.toLowerCase();
+      },
+      orElse: () => null,
     );
 
-    await box.add(item);
+    final item = SearchHistoryHive(
+      keyword: normalized,
+      searchedAt: DateTime.now(),
+    );
+    if (existingKey != null) {
+      await box.put(existingKey, item);
+    } else {
+      await box.add(item);
+    }
+  }
+
+  static Future<void> addSearchAnimeHistory({
+    required int animeId,
+    required String title,
+    required String imageUrl,
+    String? metadata,
+  }) async {
+    final box = Hive.box<SearchHistoryHive>(searchHistoryBox);
+    if (animeId <= 0) return;
+
+    final existingKey = box.keys.firstWhere(
+      (key) {
+        final item = box.get(key);
+        return item?.isAnime == true && item!.animeId == animeId;
+      },
+      orElse: () => null,
+    );
+
+    final item = SearchHistoryHive(
+      keyword: '',
+      searchedAt: DateTime.now(),
+      entryType: 'anime',
+      animeId: animeId,
+      animeTitle: title,
+      animeImageUrl: imageUrl,
+      animeMetadata: metadata,
+    );
+
+    if (existingKey != null) {
+      await box.put(existingKey, item);
+    } else {
+      await box.add(item);
+    }
   }
 
   /// Remove search keyword
