@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../utils/responsive.dart';
 
-class PaginationControls extends StatelessWidget {
+class PaginationControls extends StatefulWidget {
   final int currentPage;
   final VoidCallback? onPrevPage;
   final VoidCallback onNextPage;
@@ -10,7 +10,7 @@ class PaginationControls extends StatelessWidget {
   final bool? hasNextPage;
   final Function(int)? onPageSelected;
 
-  /// Creates pagination controls with numbered page buttons.
+  /// Creates pagination controls with modern minimalist numbered page buttons.
   ///
   /// Parameters:
   /// - currentPage: Current page number (1-indexed)
@@ -29,59 +29,110 @@ class PaginationControls extends StatelessWidget {
     this.onPageSelected,
   });
 
+  @override
+  State<PaginationControls> createState() => _PaginationControlsState();
+}
+
+class _PaginationControlsState extends State<PaginationControls> {
+  int? _pressedPage;
+
   List<Object> _getVisibleItems() {
-    final lastPage = totalPages ?? currentPage;
+    final lastPage = widget.totalPages ?? widget.currentPage;
     if (lastPage <= 0) return const [1];
-    if (lastPage <= 7) {
-      return List.generate(lastPage, (i) => i + 1);
+
+    int startPage = widget.currentPage - 2;
+    int endPage = widget.currentPage + 2;
+
+    if (widget.currentPage >= lastPage - 2) {
+      endPage = lastPage;
+      startPage = lastPage - 4;
+    } else if (widget.currentPage <= 3) {
+      startPage = 1;
     }
 
-    if (currentPage <= 3) {
-      return [1, 2, 3, '...', lastPage];
-    }
-    if (currentPage >= lastPage - 2) {
-      return [1, '...', lastPage - 2, lastPage - 1, lastPage];
-    }
-    return [
-      1,
-      '...',
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-      '...',
-      lastPage,
+    startPage = startPage < 1 ? 1 : startPage;
+    endPage = endPage > lastPage ? lastPage : endPage;
+
+    final items = <Object>[
+      ...List.generate(endPage - startPage + 1, (index) => startPage + index),
     ];
+
+    if (endPage < lastPage) {
+      if (endPage < lastPage - 1) {
+        items.add('...');
+      }
+      items.add(lastPage);
+    }
+
+    return items;
   }
 
   Widget _buildPageButton(BuildContext context, int page, VoidCallback onTap) {
-    final isCurrentPage = page == currentPage;
+    final isCurrentPage = page == widget.currentPage;
     final isSmallScreen = Responsive.isMobile(context);
-    final buttonSize = isSmallScreen ? 32.0 : 40.0;
+    final buttonSize = isSmallScreen ? 36.0 : 44.0;
+    final isPressed = _pressedPage == page;
 
     return GestureDetector(
+      onTapDown: (_) => setState(() => _pressedPage = page),
+      onTapUp: (_) => setState(() => _pressedPage = null),
+      onTapCancel: () => setState(() => _pressedPage = null),
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: buttonSize,
-        height: buttonSize,
-        decoration: BoxDecoration(
-          color: isCurrentPage ? AppColors.primary : AppColors.darkSurface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isCurrentPage
-                ? AppColors.primary
-                : AppColors.border.withValues(alpha: 0.3),
-            width: 1,
+      child: AnimatedScale(
+        scale: isPressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            color: isCurrentPage ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(isCurrentPage ? 12 : 8),
+          ),
+          child: Center(
+            child: Text(
+              page.toString(),
+              style: TextStyle(
+                color: isCurrentPage
+                    ? AppColors.dark
+                    : AppColors.textSecondary.withValues(alpha: 0.6),
+                fontWeight: isCurrentPage ? FontWeight.w600 : FontWeight.w500,
+                fontSize: Responsive.fontSizeXSmall(context),
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildArrowButton(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    final isSmallScreen = Responsive.isMobile(context);
+    final isDisabled = onPressed == null;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: isSmallScreen ? 40.0 : 48.0,
+        height: isSmallScreen ? 40.0 : 48.0,
+        decoration: BoxDecoration(
+          color: isDisabled
+              ? AppColors.darkSurface.withValues(alpha: 0.3)
+              : AppColors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Center(
-          child: Text(
-            page.toString(),
-            style: TextStyle(
-              color: isCurrentPage ? AppColors.dark : AppColors.textSecondary,
-              fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.normal,
-              fontSize: Responsive.fontSizeXSmall(context),
-            ),
+          child: Icon(
+            icon,
+            color: isDisabled
+                ? AppColors.textSecondary.withValues(alpha: 0.3)
+                : AppColors.primary,
+            size: isSmallScreen ? 20.0 : 24.0,
           ),
         ),
       ),
@@ -91,94 +142,72 @@ class PaginationControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = Responsive.paddingMedium(context);
-    final spacing = Responsive.spacingMedium(context);
-    final isSmallScreen = Responsive.isMobile(context);
+    final spacing = Responsive.spacingSmall(context);
     final isDisabledNext =
-        hasNextPage == false ||
-        (totalPages != null && currentPage >= totalPages!);
+        widget.hasNextPage == false ||
+        (widget.totalPages != null && widget.currentPage >= widget.totalPages!);
+    final isDisabledPrev = widget.onPrevPage == null;
     final visibleItems = _getVisibleItems();
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: padding, horizontal: padding),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Prev button
-            SizedBox(
-              height: Responsive.minTouchTarget,
-              child: ElevatedButton.icon(
-                onPressed: onPrevPage,
-                icon: const Icon(Icons.chevron_left),
-                label: Text(isSmallScreen ? 'Prev' : 'Previous'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.darkSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: padding * 0.7,
-                    vertical: Responsive.paddingSmall(context),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: spacing),
-
-            // Page numbers
-            ...visibleItems.asMap().entries.map((entry) {
-              final item = entry.value;
-              final isLastItem = entry.key == visibleItems.length - 1;
-              final child = item is int
-                  ? _buildPageButton(context, item, () {
-                      if (item == currentPage) return;
-                      onPageSelected?.call(item);
-                    })
-                  : Padding(
-                      padding: EdgeInsets.symmetric(horizontal: spacing * 0.3),
-                      child: Text(
-                        item.toString(),
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: Responsive.fontSizeSmall(context),
-                        ),
-                      ),
-                    );
-
-              return Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  child,
-                  if (!isLastItem) SizedBox(width: spacing * 0.5),
+                  _buildArrowButton(
+                    context,
+                    icon: Icons.chevron_left,
+                    onPressed: isDisabledPrev ? null : widget.onPrevPage,
+                  ),
+                  SizedBox(width: spacing),
+                  ...visibleItems.asMap().entries.map((entry) {
+                    final item = entry.value;
+                    final isLastItem = entry.key == visibleItems.length - 1;
+                    final child = item is int
+                        ? _buildPageButton(context, item, () {
+                            if (item == widget.currentPage) return;
+                            widget.onPageSelected?.call(item);
+                          })
+                        : Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: spacing * 0.25,
+                            ),
+                            child: Text(
+                              item.toString(),
+                              style: TextStyle(
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.5,
+                                ),
+                                fontSize: Responsive.fontSizeSmall(context),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+
+                    return Row(
+                      children: [
+                        child,
+                        if (!isLastItem) SizedBox(width: spacing * 0.5),
+                      ],
+                    );
+                  }),
+                  SizedBox(width: spacing),
+                  _buildArrowButton(
+                    context,
+                    icon: Icons.chevron_right,
+                    onPressed: isDisabledNext ? null : widget.onNextPage,
+                  ),
                 ],
-              );
-            }),
-
-            SizedBox(width: spacing),
-
-            // Next button
-            SizedBox(
-              height: Responsive.minTouchTarget,
-              child: ElevatedButton.icon(
-                onPressed: isDisabledNext ? null : onNextPage,
-                icon: const Icon(Icons.chevron_right),
-                label: const Text('Next'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.darkSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: padding * 0.7,
-                    vertical: Responsive.paddingSmall(context),
-                  ),
-                ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

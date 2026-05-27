@@ -73,9 +73,7 @@ class ApiService {
     return response.anime;
   }
 
-  Future<PaginatedAnimeResponse> fetchSeasonNowPaginated({
-    int page = 1,
-  }) async {
+  Future<PaginatedAnimeResponse> fetchSeasonNowPaginated({int page = 1}) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/seasons/now?sfw=true&page=$page'),
@@ -105,6 +103,14 @@ class ApiService {
 
   // Fungsi Pencarian
   Future<List<AnimeModel>> searchAnime(String query) async {
+    final response = await searchAnimePaginated(query);
+    return response.anime;
+  }
+
+  Future<PaginatedAnimeResponse> searchAnimePaginated(
+    String query, {
+    int page = 1,
+  }) async {
     if (query.isEmpty) {
       throw Exception('Query pencarian tidak boleh kosong');
     }
@@ -112,24 +118,25 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(
-          '$baseUrl/anime?q=${Uri.encodeComponent(query)}&limit=20&sfw=true',
+          '$baseUrl/anime?q=${Uri.encodeComponent(query)}&limit=20&sfw=true&page=$page',
         ),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-
-        List<AnimeModel> searchResults = [];
-        if (jsonData['data'] != null && jsonData['data'] is List) {
-          searchResults = (jsonData['data'] as List)
-              .map((item) => AnimeModel.fromJson(item))
-              .toList();
-        }
-
-        print('Pencarian "$query" menemukan ${searchResults.length} anime');
-        return deduplicateAnimeList(searchResults);
+        final paginated = _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
+        print('Pencarian "$query" menemukan ${paginated.anime.length} anime');
+        return paginated;
       } else if (response.statusCode == 404) {
-        return []; // Tidak ada hasil
+        return PaginatedAnimeResponse(
+          anime: const [],
+          currentPage: page,
+          totalPages: page,
+          perPage: 0,
+          hasNextPage: false,
+        );
       } else {
         throw Exception(
           'Gagal mencari anime. Status Code: ${response.statusCode}',

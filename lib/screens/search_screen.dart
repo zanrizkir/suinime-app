@@ -9,6 +9,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import 'detail_screen.dart';
 import 'home/widgets/anime_card.dart';
+import 'home/widgets/pagination_controls.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -134,7 +135,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // Show search results
-    return _buildSearchResults(liveSearch.searchResults);
+    return _buildSearchResults(liveSearch);
   }
 
   Widget _buildInitialState(SearchHistoryNotifier searchHistory) {
@@ -213,15 +214,36 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSearchResults(List<AnimeModel> results) {
-    return GridView.builder(
-      padding: EdgeInsets.all(Responsive.paddingMedium(context)),
-      gridDelegate: Responsive.gridDelegateSmall(context),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final anime = results[index];
-        return _buildGridCard(anime);
-      },
+  Widget _buildSearchResults(LiveSearchNotifier liveSearch) {
+    final results = liveSearch.searchResults;
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.all(Responsive.paddingMedium(context)),
+            gridDelegate: Responsive.gridDelegateSmall(context),
+            itemCount: results.length,
+            itemBuilder: (context, index) {
+              final anime = results[index];
+              return _buildGridCard(anime);
+            },
+          ),
+          PaginationControls(
+            currentPage: liveSearch.currentPage,
+            totalPages: liveSearch.totalPages,
+            hasNextPage: liveSearch.hasNextPage,
+            onPrevPage: liveSearch.currentPage == 1
+                ? null
+                : liveSearch.previousPage,
+            onNextPage: liveSearch.nextPage,
+            onPageSelected: liveSearch.goToPage,
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
