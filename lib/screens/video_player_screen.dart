@@ -40,6 +40,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   bool _hasError = false;
   String _errorMessage = '';
   String _episodeTitle = '';
+  String? selectedUrl;
+  List<_StreamingMirror> _streamingMirrors = const [];
   String? _previousEpisodeSlug;
   String? _nextEpisodeSlug;
   bool _hasPreviousEpisode = false;
@@ -101,12 +103,33 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       _isLoading = true;
       _hasError = false;
       _errorMessage = '';
+      selectedUrl = null;
+      _streamingMirrors = const [];
     });
 
     final result = await _apiService.fetchEpisodeStream(_episodeSlug);
 
     if (result['success'] == true) {
-      final streamUrl = result['streamUrl'] as String;
+      final streamUrl = result['streamUrl']?.toString();
+      final mirrors = _normalizeStreamingMirrors(
+        result['mirrors'],
+        fallbackUrl: streamUrl,
+      );
+      final nextSelectedUrl = mirrors.isNotEmpty
+          ? mirrors.first.url
+          : streamUrl;
+
+      if (nextSelectedUrl == null || nextSelectedUrl.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _hasError = true;
+            _errorMessage = 'Link streaming tidak tersedia';
+          });
+        }
+        return;
+      }
+
       await VideoTrackingService.recordEpisodeWatch(
         malId: widget.malId,
         animeTitle: widget.animeTitle,
@@ -121,7 +144,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
           _previousEpisodeSlug = result['prevSlug']?.toString();
           _hasNextEpisode = result['hasNext'] == true;
           _nextEpisodeSlug = result['nextSlug']?.toString();
-          _initializeWebView(streamUrl);
+          _streamingMirrors = mirrors;
+          selectedUrl = nextSelectedUrl;
+          _initializeWebView(nextSelectedUrl);
           _isLoading = false;
         });
       }
@@ -154,6 +179,73 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
         ),
       )
       ..loadRequest(Uri.parse(url));
+  }
+
+  List<_StreamingMirror> _normalizeStreamingMirrors(
+    dynamic mirrors, {
+    String? fallbackUrl,
+  }) {
+    final normalized = <_StreamingMirror>[];
+    final seen = <String>{};
+
+    void addMirror(String? label, String? url) {
+      final cleanUrl = url?.trim();
+      if (cleanUrl == null || cleanUrl.isEmpty || !seen.add(cleanUrl)) return;
+
+      final cleanLabel = label?.trim();
+      normalized.add(
+        _StreamingMirror(
+          label: cleanLabel == null || cleanLabel.isEmpty
+              ? 'Server ${normalized.length + 1}'
+              : cleanLabel,
+          url: cleanUrl,
+        ),
+      );
+    }
+
+    if (mirrors is List) {
+      for (final mirror in mirrors) {
+        if (mirror is Map) {
+          final label = _firstText([
+            mirror['label'],
+            mirror['quality'],
+            mirror['resolution'],
+            mirror['server'],
+            mirror['name'],
+          ]);
+          final url = _firstText([
+            mirror['url'],
+            mirror['stream_url'],
+            mirror['streaming_url'],
+            mirror['embed_url'],
+            mirror['link'],
+          ]);
+          addMirror(label, url);
+        } else {
+          addMirror(null, mirror?.toString());
+        }
+      }
+    }
+
+    addMirror('Default', fallbackUrl);
+    return normalized;
+  }
+
+  String? _firstText(Iterable<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim();
+      if (text != null && text.isNotEmpty) return text;
+    }
+    return null;
+  }
+
+  void _selectStreamingMirror(_StreamingMirror mirror) {
+    if (selectedUrl == mirror.url) return;
+
+    setState(() {
+      selectedUrl = mirror.url;
+    });
+    _webViewController?.loadRequest(Uri.parse(mirror.url));
   }
 
   List<_EpisodeChoice> _normalizeEpisodes(List<Map<String, dynamic>> episodes) {
@@ -393,6 +485,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
               color: AppColors.primary,
               backgroundColor: AppColors.darkSurface,
             ),
+          _buildMirrorSelector(),
           _buildEpisodeControls(),
           Expanded(child: _buildEpisodeInfo()),
         ],
@@ -484,12 +577,62 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
     if (_webViewController != null) {
       return WebViewWidget(
-        key: ValueKey('webview-$_episodeSlug'),
+        key: ValueKey('webview-$_episodeSlug-$selectedUrl'),
         controller: _webViewController!,
       );
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildMirrorSelector() {
+    if (_streamingMirrors.length <= 1) return const SizedBox.shrink();
+
+    return Container(
+      color: AppColors.dark,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (var index = 0; index < _streamingMirrors.length; index++) ...[
+              ChoiceChip(
+                label: Text(
+                  _streamingMirrors[index].label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                selected: selectedUrl == _streamingMirrors[index].url,
+                onSelected: _isLoading || _isNavigatingEpisode
+                    ? null
+                    : (_) => _selectStreamingMirror(_streamingMirrors[index]),
+                selectedColor: AppColors.primary,
+                backgroundColor: AppColors.darkSurface,
+                disabledColor: AppColors.darkSurface,
+                checkmarkColor: AppColors.white,
+                side: BorderSide(
+                  color: selectedUrl == _streamingMirrors[index].url
+                      ? AppColors.primary
+                      : AppColors.border,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                labelStyle: TextStyle(
+                  color: selectedUrl == _streamingMirrors[index].url
+                      ? AppColors.white
+                      : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (index != _streamingMirrors.length - 1)
+                const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildEpisodeControls() {
@@ -589,6 +732,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
     );
   }
+}
+
+class _StreamingMirror {
+  final String label;
+  final String url;
+
+  const _StreamingMirror({required this.label, required this.url});
 }
 
 class _EpisodeChoice {
