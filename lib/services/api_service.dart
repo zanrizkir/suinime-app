@@ -5,24 +5,58 @@ import '../models/paginated_anime_response.dart';
 
 class ApiService {
   static const String baseUrl = 'https://api.jikan.moe/v4';
+  static const List<String> _blockedGenreKeywords = [
+    'hentai',
+    'ecchi',
+    'erotica',
+    'boys love',
+    'girls love',
+    'gore',
+    'adult cast',
+    'magical sex shift',
+  ];
+
+  static List<AnimeModel> deduplicateAnimeList(List<AnimeModel> animeList) {
+    final seenIds = <int>{};
+    return animeList.where((anime) => seenIds.add(anime.malId)).toList();
+  }
+
+  PaginatedAnimeResponse _deduplicatePaginated(
+    PaginatedAnimeResponse response,
+  ) {
+    return PaginatedAnimeResponse(
+      anime: deduplicateAnimeList(response.anime),
+      currentPage: response.currentPage,
+      totalPages: response.totalPages,
+      perPage: response.perPage,
+      hasNextPage: response.hasNextPage,
+    );
+  }
+
+  bool _isSafeGenreName(String name) {
+    final normalizedName = name.toLowerCase();
+    return !_blockedGenreKeywords.any(
+      (keyword) => normalizedName.contains(keyword),
+    );
+  }
 
   // Fungsi existing untuk mengambil top anime (diperbarui)
   Future<List<AnimeModel>> fetchTopAnime() async {
+    final response = await fetchTopAnimePaginated();
+    return response.anime;
+  }
+
+  Future<PaginatedAnimeResponse> fetchTopAnimePaginated({int page = 1}) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/top/anime'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/top/anime?sfw=true&page=$page'),
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-
-        List<AnimeModel> animeList = [];
-        if (jsonData['data'] != null && jsonData['data'] is List) {
-          animeList = (jsonData['data'] as List)
-              .map((item) => AnimeModel.fromJson(item))
-              .toList();
-        }
-
-        print('Berhasil mengambil ${animeList.length} anime');
-        return animeList;
+        return _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
       } else {
         throw Exception(
           'Gagal mengambil data. Status Code: ${response.statusCode}',
@@ -34,6 +68,41 @@ class ApiService {
     }
   }
 
+  Future<List<AnimeModel>> fetchSeasonNow({int page = 1}) async {
+    final response = await fetchSeasonNowPaginated(page: page);
+    return response.anime;
+  }
+
+  Future<PaginatedAnimeResponse> fetchSeasonNowPaginated({
+    int page = 1,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/seasons/now?sfw=true&page=$page'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        return _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
+      } else {
+        throw Exception(
+          'Gagal mengambil ongoing anime. Status Code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Kesalahan pada fetchSeasonNow: $e');
+      return PaginatedAnimeResponse(
+        anime: const [],
+        currentPage: page,
+        totalPages: page,
+        perPage: 0,
+        hasNextPage: false,
+      );
+    }
+  }
+
   // Fungsi Pencarian
   Future<List<AnimeModel>> searchAnime(String query) async {
     if (query.isEmpty) {
@@ -42,7 +111,9 @@ class ApiService {
 
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/anime?q=${Uri.encodeComponent(query)}&limit=20'),
+        Uri.parse(
+          '$baseUrl/anime?q=${Uri.encodeComponent(query)}&limit=20&sfw=true',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -56,7 +127,7 @@ class ApiService {
         }
 
         print('Pencarian "$query" menemukan ${searchResults.length} anime');
-        return searchResults;
+        return deduplicateAnimeList(searchResults);
       } else if (response.statusCode == 404) {
         return []; // Tidak ada hasil
       } else {
@@ -79,6 +150,7 @@ class ApiService {
         final List<dynamic> genreList = jsonData['data'] ?? [];
 
         return genreList
+            .where((genre) => _isSafeGenreName(genre['name']?.toString() ?? ''))
             .map<Map<String, dynamic>>(
               (genre) => {'id': genre['mal_id'], 'name': genre['name']},
             )
@@ -118,13 +190,15 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(
-          '$baseUrl/anime?genres=$genreId&page=$page&order_by=score&sort=desc',
+          '$baseUrl/anime?genres=$genreId&page=$page&order_by=score&sort=desc&sfw=true',
         ),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        return PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page);
+        return _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
       } else {
         throw Exception(
           'Gagal mengambil anime genre. Status Code: ${response.statusCode}',
@@ -147,13 +221,15 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(
-          '$baseUrl/anime?status=complete&page=$page&order_by=score&sort=desc',
+          '$baseUrl/anime?status=complete&page=$page&order_by=score&sort=desc&sfw=true',
         ),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        return PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page);
+        return _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
       } else {
         throw Exception(
           'Gagal mengambil completed anime. Status Code: ${response.statusCode}',
@@ -161,6 +237,37 @@ class ApiService {
       }
     } catch (e) {
       print('Kesalahan pada getCompletedAnime: $e');
+      return PaginatedAnimeResponse(
+        anime: const [],
+        currentPage: page,
+        totalPages: page,
+        perPage: 0,
+        hasNextPage: false,
+      );
+    }
+  }
+
+  Future<PaginatedAnimeResponse> fetchSchedulePaginated({
+    required String dayApi,
+    int page = 1,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/schedules?filter=$dayApi&page=$page&sfw=true'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        return _deduplicatePaginated(
+          PaginatedAnimeResponse.fromJson(jsonData, requestedPage: page),
+        );
+      } else {
+        throw Exception(
+          'Gagal mengambil jadwal anime. Status Code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Kesalahan pada fetchSchedulePaginated: $e');
       return PaginatedAnimeResponse(
         anime: const [],
         currentPage: page,

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
-import '../../../models/paginated_anime_response.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../../services/api_service.dart';
 import '../widgets/home_views.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -33,7 +31,7 @@ class _DashboardTabState extends State<DashboardTab> {
   int perPage = 25;
   bool hasNextPage = false;
 
-  final String baseUrl = 'https://api.jikan.moe/v4';
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -94,17 +92,9 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/top/anime?filter=airing&page=1'),
+      final fetched = ApiService.deduplicateAnimeList(
+        await _apiService.fetchSeasonNow(page: 1),
       );
-      List<AnimeModel> fetched = [];
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'] ?? [];
-        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
-      } else {
-        debugPrint('Failed to load latest anime: ${response.statusCode}');
-      }
 
       if (mounted) {
         setState(() {
@@ -136,38 +126,22 @@ class _DashboardTabState extends State<DashboardTab> {
     }
 
     try {
-      String url = '';
       final requestedPage = currentPage;
+      final paginated = filter == 'On-going Anime'
+          ? await _apiService.fetchSeasonNowPaginated(page: requestedPage)
+          : await _apiService.fetchTopAnimePaginated(page: requestedPage);
 
-      if (filter == 'Home' || filter == 'Top Anime') {
-        url = '$baseUrl/top/anime?page=$currentPage';
-      } else if (filter == 'On-going Anime') {
-        url = '$baseUrl/top/anime?filter=airing&page=$currentPage';
-      }
-
-      List<AnimeModel> fetched = [];
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final paginated = PaginatedAnimeResponse.fromJson(
-          jsonData,
-          requestedPage: requestedPage,
-        );
-        fetched = paginated.anime;
-        if (mounted && widget.filter == filter) {
-          setState(() {
-            totalPages = paginated.totalPages;
-            perPage = paginated.perPage > 0 ? paginated.perPage : perPage;
-            hasNextPage = paginated.hasNextPage;
-          });
-        }
-      } else {
-        debugPrint('Failed to load data: ${response.statusCode}');
+      if (mounted && widget.filter == filter) {
+        setState(() {
+          totalPages = paginated.totalPages;
+          perPage = paginated.perPage > 0 ? paginated.perPage : perPage;
+          hasNextPage = paginated.hasNextPage;
+        });
       }
 
       if (mounted && widget.filter == filter) {
         setState(() {
-          animeList = fetched;
+          animeList = ApiService.deduplicateAnimeList(paginated.anime);
           if (updateLoading) isLoading = false;
         });
       }

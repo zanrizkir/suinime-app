@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
-import '../../../models/paginated_anime_response.dart';
 import '../../../config/theme/app_theme.dart';
+import '../../../services/api_service.dart';
 import '../widgets/home_views.dart';
 
 class ScheduleTab extends StatefulWidget {
@@ -21,7 +19,7 @@ class _ScheduleTabState extends State<ScheduleTab> {
   int totalPages = 1;
   bool hasNextPage = false;
 
-  final String baseUrl = 'https://api.jikan.moe/v4';
+  final ApiService _apiService = ApiService();
 
   final List<Map<String, String>> _days = [
     {'label': 'Senin', 'api': 'monday'},
@@ -49,26 +47,18 @@ class _ScheduleTabState extends State<ScheduleTab> {
         (d) => d['label'] == selectedDay,
         orElse: () => {'label': 'Senin', 'api': 'monday'},
       )['api']!;
-      final url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
-
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final paginated = PaginatedAnimeResponse.fromJson(
-          jsonData,
-          requestedPage: currentPage,
-        );
-        final fetched = paginated.anime;
-        if (mounted) {
-          setState(() {
-            animeList = fetched;
-            totalPages = paginated.totalPages;
-            hasNextPage = paginated.hasNextPage;
-            isLoading = false;
-          });
-        }
-      } else {
-        throw Exception('Failed to load data');
+      final paginated = await _apiService.fetchSchedulePaginated(
+        dayApi: dayApi,
+        page: currentPage,
+      );
+      final fetched = ApiService.deduplicateAnimeList(paginated.anime);
+      if (mounted) {
+        setState(() {
+          animeList = fetched;
+          totalPages = paginated.totalPages;
+          hasNextPage = paginated.hasNextPage;
+          isLoading = false;
+        });
       }
     } catch (e) {
       if (mounted) {

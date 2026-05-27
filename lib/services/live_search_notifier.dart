@@ -66,7 +66,7 @@ class LiveSearchNotifier extends ChangeNotifier {
       }
 
       _lastCompletedRequest = currentRequest;
-      _searchResults = results;
+      _searchResults = ApiService.deduplicateAnimeList(results);
       _errorMessage = null;
       _isLoading = false;
       notifyListeners();

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class OtakudesuService {
-  final String baseUrl = 'https://gala-seminar-seismic.ngrok-free.dev';
+  final String baseUrl = 'https://a038-2404-c0-a702-8f8c-d808-f3a9-951-bd27.ngrok-free.app';
 
   final Map<String, String> _headers = {
     'ngrok-skip-browser-warning': 'true',

@@ -1,10 +1,9 @@
 // lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../../models/anime_model.dart';
 import '../../models/paginated_anime_response.dart';
 import '../../config/theme/app_theme.dart';
+import '../../services/api_service.dart';
 import '../dashboard_anime_list_screen.dart';
 import '../search_screen.dart';
 import '../../widgets/custom_text_field.dart';
@@ -31,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool hasNextPage = false;
 
   final TextEditingController _searchEntryController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -75,8 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {'label': 'Minggu', 'api': 'sunday'},
   ];
 
-  final String baseUrl = 'https://api.jikan.moe/v4';
-
   @override
   void initState() {
     super.initState();
@@ -114,17 +112,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      String url = '';
       final requestedPage = currentPage;
+      PaginatedAnimeResponse? paginated;
 
       if (selectedFilter == 'Home') {
-        url = '$baseUrl/top/anime?page=$currentPage';
+        paginated = await _apiService.fetchTopAnimePaginated(
+          page: requestedPage,
+        );
       } else if (selectedFilter == 'Jadwal Rilis') {
         final dayApi = _days.firstWhere(
           (d) => d['label'] == selectedDay,
           orElse: () => {'label': 'Senin', 'api': 'monday'},
         )['api']!;
-        url = '$baseUrl/schedules?filter=$dayApi&page=$currentPage';
+        paginated = await _apiService.fetchSchedulePaginated(
+          dayApi: dayApi,
+          page: requestedPage,
+        );
       } else if (selectedFilter == 'Pustaka' ||
           selectedFilter == 'Riwayat' ||
           selectedFilter == 'Lainnya') {
@@ -136,23 +139,22 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      List<AnimeModel> fetched = [];
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final paginated = PaginatedAnimeResponse.fromJson(
-          jsonData,
-          requestedPage: requestedPage,
-        );
-        fetched = paginated.anime;
-        if (mounted) {
+      final safePaginated = paginated;
+      if (safePaginated == null) {
+        if (mounted && updateLoading) {
           setState(() {
-            totalPages = paginated.totalPages;
-            hasNextPage = paginated.hasNextPage;
+            isLoading = false;
           });
         }
-      } else {
-        debugPrint('Failed to load data: ${response.statusCode}');
+        return;
+      }
+
+      final fetched = ApiService.deduplicateAnimeList(safePaginated.anime);
+      if (mounted) {
+        setState(() {
+          totalPages = safePaginated.totalPages;
+          hasNextPage = safePaginated.hasNextPage;
+        });
       }
 
       if (mounted) {

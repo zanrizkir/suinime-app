@@ -71,7 +71,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
       );
       if (mounted) {
         setState(() {
-          genreAnimeList = fetched.anime;
+          genreAnimeList = ApiService.deduplicateAnimeList(fetched.anime);
           totalPages = fetched.totalPages;
           hasNextPage = fetched.hasNextPage;
           isGenreAnimeLoading = false;

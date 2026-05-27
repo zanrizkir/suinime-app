@@ -37,7 +37,7 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
       );
       if (mounted) {
         setState(() {
-          animeList = fetched.anime;
+          animeList = ApiService.deduplicateAnimeList(fetched.anime);
           totalPages = fetched.totalPages;
           hasNextPage = fetched.hasNextPage;
           isLoading = false;
