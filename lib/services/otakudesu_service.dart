@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class OtakudesuService {
-  final String baseUrl = 'https://a038-2404-c0-a702-8f8c-d808-f3a9-951-bd27.ngrok-free.app';
+  final String baseUrl =
+      'https://a7da-2404-c0-a702-8f8c-d808-f3a9-951-bd27.ngrok-free.app';
 
   final Map<String, String> _headers = {
     'ngrok-skip-browser-warning': 'true',
@@ -58,10 +59,18 @@ class OtakudesuService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (json['status'] == 'Ok') {
-          final data = json['data'];
+          final data = json['data'] as Map?;
+          if (data == null) {
+            return {'success': false, 'error': 'Data episode tidak ditemukan'};
+          }
+          final mirrors = _parseStreamMirrors(data);
+          final streamUrl = mirrors.isNotEmpty
+              ? mirrors.first['url']
+              : _firstText([data['stream_url'], data['streaming_url']]);
           return {
             'success': true,
-            'streamUrl': data['stream_url'],
+            'streamUrl': streamUrl,
+            'mirrors': mirrors,
             'title': data['episode'],
             'hasNext': data['has_next_episode'] ?? false,
             'nextSlug': data['next_episode']?['slug'],
@@ -75,6 +84,143 @@ class OtakudesuService {
       print('Error Stream: $e');
       return {'success': false, 'error': e.toString()};
     }
+  }
+
+  List<Map<String, String>> _parseStreamMirrors(dynamic data) {
+    final mirrors = <Map<String, String>>[];
+
+    void addMirror({
+      required String? url,
+      String? label,
+      String? quality,
+      String? server,
+    }) {
+      final cleanUrl = url?.trim();
+      if (cleanUrl == null || cleanUrl.isEmpty) return;
+      if (mirrors.any((mirror) => mirror['url'] == cleanUrl)) return;
+
+      final parts = <String>[
+        if (quality != null && quality.trim().isNotEmpty) quality.trim(),
+        if (server != null && server.trim().isNotEmpty) server.trim(),
+      ];
+      final cleanLabel = label?.trim().isNotEmpty == true
+          ? label!.trim()
+          : parts.join(' - ');
+
+      mirrors.add({
+        'label': cleanLabel.isEmpty
+            ? 'Server ${mirrors.length + 1}'
+            : cleanLabel,
+        'url': cleanUrl,
+        if (quality != null && quality.trim().isNotEmpty)
+          'quality': quality.trim(),
+        if (server != null && server.trim().isNotEmpty) 'server': server.trim(),
+      });
+    }
+
+    void parseItem(dynamic item, {String? inheritedQuality}) {
+      if (item is String) {
+        addMirror(url: item, quality: inheritedQuality);
+        return;
+      }
+
+      if (item is! Map) return;
+
+      final quality = _firstText([
+        item['quality'],
+        item['resolution'],
+        item['resolusi'],
+      ]);
+
+      final server = _firstText([
+        item['server'],
+        item['server_name'],
+        item['name'],
+        item['title'],
+      ]);
+
+      final url = _firstText([
+        item['url'],
+        item['stream_url'],
+        item['streaming_url'],
+        item['embed_url'],
+        item['link'],
+        item['iframe'],
+        item['file'],
+      ]);
+
+      addMirror(
+        url: url,
+        label: item['label']?.toString(),
+        quality: quality ?? inheritedQuality,
+        server: server,
+      );
+
+      for (final key in [
+        'servers',
+        'server_list',
+        'mirrors',
+        'sources',
+        'urls',
+        'links',
+      ]) {
+        final children = item[key];
+        if (children is List) {
+          for (final child in children) {
+            parseItem(child, inheritedQuality: quality ?? inheritedQuality);
+          }
+        }
+      }
+    }
+
+    if (data is Map) {
+      for (final key in [
+        'mirrors',
+        'mirror',
+        'servers',
+        'server',
+        'qualities',
+        'quality',
+        'sources',
+        'video_sources',
+        'stream_urls',
+        'streaming_urls',
+      ]) {
+        final source = data[key];
+        if (source is List) {
+          for (final item in source) {
+            parseItem(item);
+          }
+        } else if (source is Map) {
+          for (final entry in source.entries) {
+            final inheritedQuality = entry.key.toString();
+            final value = entry.value;
+            if (value is List) {
+              for (final item in value) {
+                parseItem(item, inheritedQuality: inheritedQuality);
+              }
+            } else {
+              parseItem(value, inheritedQuality: inheritedQuality);
+            }
+          }
+        }
+      }
+
+      addMirror(
+        url: _firstText([data['stream_url'], data['streaming_url']]),
+        label: 'Default',
+      );
+    }
+
+    return mirrors;
+  }
+
+  String? _firstText(Iterable<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim();
+      if (text != null && text.isNotEmpty) return text;
+    }
+    return null;
   }
 
   Future<String?> findEpisodeSlugExact(
