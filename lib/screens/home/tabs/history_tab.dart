@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../models/hive/watch_history_hive.dart';
 import '../../../services/hive_service.dart';
+import '../../../utils/responsive.dart';
 import '../../detail_screen.dart';
 
 class HistoryTab extends StatelessWidget {
@@ -22,7 +23,12 @@ class HistoryTab extends StatelessWidget {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+          padding: EdgeInsets.fromLTRB(
+            12,
+            8,
+            12,
+            Responsive.safeBottomSpacing(context, minimum: 20),
+          ),
           itemCount: history.length,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemBuilder: (context, index) {

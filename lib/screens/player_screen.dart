@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../config/theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 // Constants
 const double _horizontalPadding = 16.0;
@@ -356,7 +357,12 @@ class _VideoControlsOverlayState extends State<VideoControlsOverlay> {
             left: 0,
             right: 0,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                Responsive.safeBottomSpacing(context, minimum: 12),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,

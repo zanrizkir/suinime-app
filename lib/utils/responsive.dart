@@ -46,6 +46,35 @@ class Responsive {
   static EdgeInsets safePadding(BuildContext context) =>
       MediaQuery.of(context).padding;
 
+  static double systemBottomInset(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    return [
+      mediaQuery.padding.bottom,
+      mediaQuery.viewPadding.bottom,
+      mediaQuery.systemGestureInsets.bottom,
+    ].reduce((value, element) => value > element ? value : element);
+  }
+
+  static double safeBottomSpacing(BuildContext context, {double minimum = 16}) {
+    final bottomInset = systemBottomInset(context);
+    return bottomInset > minimum ? bottomInset : minimum;
+  }
+
+  static EdgeInsets safeBottomPadding(
+    BuildContext context, {
+    double left = 0,
+    double top = 0,
+    double right = 0,
+    double minimumBottom = 16,
+  }) {
+    return EdgeInsets.fromLTRB(
+      left,
+      top,
+      right,
+      safeBottomSpacing(context, minimum: minimumBottom),
+    );
+  }
+
   static EdgeInsets viewInsets(BuildContext context) =>
       MediaQuery.of(context).viewInsets;
 

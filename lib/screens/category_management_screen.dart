@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
 import '../models/library_model.dart';
 import '../services/library_service.dart';
+import '../utils/responsive.dart';
 
 class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
@@ -49,12 +50,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             return _buildEmptyState(context, library);
           }
 
-          final mediaQuery = MediaQuery.of(context);
-          final systemBottomInset = [
-            mediaQuery.padding.bottom,
-            mediaQuery.viewPadding.bottom,
-            mediaQuery.systemGestureInsets.bottom,
-          ].reduce((value, element) => value > element ? value : element);
+          final systemBottomInset = Responsive.systemBottomInset(context);
 
           return Column(
             children: [

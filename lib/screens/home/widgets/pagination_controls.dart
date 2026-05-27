@@ -143,6 +143,10 @@ class _PaginationControlsState extends State<PaginationControls> {
   Widget build(BuildContext context) {
     final padding = Responsive.paddingMedium(context);
     final spacing = Responsive.spacingSmall(context);
+    final bottomPadding = Responsive.safeBottomSpacing(
+      context,
+      minimum: padding,
+    );
     final isDisabledNext =
         widget.hasNextPage == false ||
         (widget.totalPages != null && widget.currentPage >= widget.totalPages!);
@@ -150,7 +154,7 @@ class _PaginationControlsState extends State<PaginationControls> {
     final visibleItems = _getVisibleItems();
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: padding, horizontal: padding),
+      padding: EdgeInsets.fromLTRB(padding, padding, padding, bottomPadding),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(

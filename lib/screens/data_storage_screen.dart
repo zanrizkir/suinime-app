@@ -5,6 +5,7 @@ import '../config/theme/app_theme.dart';
 import '../services/backup_restore_service.dart';
 import '../services/storage_settings_service.dart';
 import '../services/hive_service.dart';
+import '../utils/responsive.dart';
 
 class DataStorageScreen extends StatefulWidget {
   const DataStorageScreen({super.key});
@@ -264,7 +265,12 @@ class _DataStorageScreenState extends State<DataStorageScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              Responsive.safeBottomSpacing(context, minimum: 30),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -329,7 +335,6 @@ class _DataStorageScreenState extends State<DataStorageScreen> {
                   subtitle: 'Hapus cache data anime yang disimpan',
                   onTap: _isLoading ? null : _clearCache,
                 ),
-                const SizedBox(height: 30),
               ],
             ),
           ),

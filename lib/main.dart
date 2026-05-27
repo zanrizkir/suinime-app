@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'config/theme/app_theme.dart';
 import 'screens/home/home_screen.dart';
@@ -16,6 +17,15 @@ void main() async {
   // Initialize Hive database
   await HiveService.initHive();
   await HiveService.initializeDefaultCategories();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: AppColors.darkBg,
+      systemNavigationBarDividerColor: AppColors.darkBg,
+      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
 
   runApp(const SuinimeApp());
   ApiService().fetchTopAnime();

@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../config/theme/app_theme.dart';
 import '../services/otakudesu_service.dart';
 import '../services/video_tracking_service.dart';
+import '../utils/responsive.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final int malId;
@@ -267,16 +268,23 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.darkSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (sheetContext) {
         return SafeArea(
+          top: false,
           child: SizedBox(
             height: MediaQuery.sizeOf(sheetContext).height * 0.68,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                10,
+                16,
+                Responsive.safeBottomSpacing(sheetContext),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -541,7 +549,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Widget _buildEpisodeInfo() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        18,
+        16,
+        Responsive.safeBottomSpacing(context, minimum: 24),
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),

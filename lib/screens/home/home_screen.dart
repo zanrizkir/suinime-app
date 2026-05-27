@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../dashboard_anime_list_screen.dart';
 import '../search_screen.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../utils/responsive.dart';
 import 'widgets/home_views.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/history_tab.dart';
@@ -328,11 +329,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNavigationBar() {
     final activeIndex = _activeBottomNavIndex;
+    final bottomInset = Responsive.systemBottomInset(context);
 
-    return SafeArea(
-      top: false,
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 0, 12, bottomInset + 12),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.darkSurface,
