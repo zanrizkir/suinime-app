@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../models/anime_model.dart';
+import '../../../models/paginated_anime_response.dart';
 import '../../../config/theme/app_theme.dart';
 import '../widgets/home_views.dart';
 
@@ -28,6 +29,9 @@ class _DashboardTabState extends State<DashboardTab> {
   List<AnimeModel> animeList = [];
   List<AnimeModel> latestAnimeList = [];
   List<Map<String, dynamic>> watchHistory = [];
+  int totalPages = 1;
+  int perPage = 25;
+  bool hasNextPage = false;
 
   final String baseUrl = 'https://api.jikan.moe/v4';
 
@@ -64,6 +68,9 @@ class _DashboardTabState extends State<DashboardTab> {
     if (oldWidget.filter != widget.filter) {
       setState(() {
         currentPage = 1;
+        totalPages = 1;
+        perPage = 25;
+        hasNextPage = false;
         animeList = [];
       });
       _fetchData();
@@ -130,6 +137,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
     try {
       String url = '';
+      final requestedPage = currentPage;
 
       if (filter == 'Home' || filter == 'Top Anime') {
         url = '$baseUrl/top/anime?page=$currentPage';
@@ -141,8 +149,18 @@ class _DashboardTabState extends State<DashboardTab> {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        final List<dynamic> dataList = jsonData['data'] ?? [];
-        fetched = dataList.map((item) => AnimeModel.fromJson(item)).toList();
+        final paginated = PaginatedAnimeResponse.fromJson(
+          jsonData,
+          requestedPage: requestedPage,
+        );
+        fetched = paginated.anime;
+        if (mounted && widget.filter == filter) {
+          setState(() {
+            totalPages = paginated.totalPages;
+            perPage = paginated.perPage > 0 ? paginated.perPage : perPage;
+            hasNextPage = paginated.hasNextPage;
+          });
+        }
       } else {
         debugPrint('Failed to load data: ${response.statusCode}');
       }
@@ -169,8 +187,19 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 
   void _nextPage() {
+    if (!hasNextPage && currentPage >= totalPages) return;
     setState(() {
       currentPage++;
+      animeList = [];
+    });
+    _fetchData();
+  }
+
+  void _goToPage(int page) {
+    final targetPage = page < 1 ? 1 : (page > totalPages ? totalPages : page);
+    if (targetPage == currentPage) return;
+    setState(() {
+      currentPage = targetPage;
       animeList = [];
     });
     _fetchData();
@@ -340,6 +369,7 @@ class _DashboardTabState extends State<DashboardTab> {
             animeList: animeList.take(6).toList(),
             isLoading: isLoading,
             onSeeAll: widget.onTopAnimeSeeAll,
+            ranked: true,
           ),
           const SizedBox(height: 20),
         ],
@@ -350,13 +380,17 @@ class _DashboardTabState extends State<DashboardTab> {
   //==== TOP ANIME =====
 
   Widget _buildTopAnimeBody() {
-    return HomeViews.buildScrollableGridSection(
+    return HomeViews.buildScrollableRankedSection(
       context: context,
       animeList: animeList,
       isLoading: isLoading,
       currentPage: currentPage,
+      totalPages: totalPages,
+      perPage: perPage,
       onPrevPage: currentPage == 1 ? null : _prevPage,
       onNextPage: _nextPage,
+      onPageSelected: _goToPage,
+      hasNextPage: hasNextPage,
     );
   }
 
@@ -366,8 +400,11 @@ class _DashboardTabState extends State<DashboardTab> {
       animeList: animeList,
       isLoading: isLoading,
       currentPage: currentPage,
+      totalPages: totalPages,
       onPrevPage: currentPage == 1 ? null : _prevPage,
       onNextPage: _nextPage,
+      onPageSelected: _goToPage,
+      hasNextPage: hasNextPage,
     );
   }
 }

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../models/anime_model.dart';
+import '../../../models/library_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../services/library_service.dart';
+import '../../../utils/responsive.dart';
+import '../../../utils/model_converter.dart';
+import '../widgets/anime_card.dart';
+import '../../detail_screen.dart';
 
 class LibraryTab extends StatefulWidget {
   const LibraryTab({super.key});
@@ -225,113 +231,36 @@ class _LibraryTabState extends State<LibraryTab> {
     );
   }
 
-  Widget _buildAnimeGrid(List items) {
+  Widget _buildAnimeGrid(List<LibraryItem> items) {
     return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.65,
-      ),
+      padding: EdgeInsets.all(Responsive.paddingMedium(context)),
+      gridDelegate: Responsive.gridDelegateSmall(context),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.dark.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                item.imageUrl.isNotEmpty
-                    ? Image.network(
-                        item.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: AppColors.darkSurface,
-                          child: const Icon(
-                            Icons.broken_image,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: AppColors.darkSurface,
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.dark.withValues(alpha: 0),
-                        AppColors.dark.withValues(alpha: 0.8),
-                      ],
-                      stops: const [0.3, 1.0],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  right: 8,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
-                      ),
-                      if (item.score != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: AppColors.warning,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              item.score.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        final animeModel = item.toAnimeModel();
+        return AnimeCard(
+          anime: animeModel,
+          onTap: () => _openDetail(animeModel),
+          enableShadow: true,
         );
       },
+    );
+  }
+
+  void _openDetail(AnimeModel animeModel) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailScreen(
+          malId: animeModel.malId,
+          animeInfo: {
+            'title': animeModel.title,
+            'imageUrl': animeModel.imageUrl,
+            'score': animeModel.score,
+          },
+        ),
+      ),
     );
   }
 

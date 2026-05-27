@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../utils/responsive.dart';
-import 'anime_grid_card.dart';
+import 'anime_card.dart';
 import 'pagination_controls.dart';
+import 'ranked_anime_list.dart';
 import 'section_header.dart';
 import '../../detail_screen.dart';
 
@@ -16,6 +17,7 @@ class HomeViews {
     required List<AnimeModel> animeList,
     required bool isLoading,
     required VoidCallback onSeeAll,
+    bool ranked = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +39,12 @@ class HomeViews {
             ),
           )
         else
-          buildAnimeGrid(context: context, animeList: animeList),
+          ranked
+              ? RankedAnimeList(
+                  animeList: animeList,
+                  onAnimeTap: (anime) => openDetail(context, anime),
+                )
+              : buildAnimeGrid(context: context, animeList: animeList),
       ],
     );
   }
@@ -47,8 +54,11 @@ class HomeViews {
     required List<AnimeModel> animeList,
     required bool isLoading,
     required int currentPage,
+    required int totalPages,
     required VoidCallback? onPrevPage,
     required VoidCallback onNextPage,
+    required ValueChanged<int> onPageSelected,
+    bool? hasNextPage,
   }) {
     if (isLoading && animeList.isEmpty) {
       return const Center(
@@ -72,6 +82,57 @@ class HomeViews {
             currentPage: currentPage,
             onPrevPage: onPrevPage,
             onNextPage: onNextPage,
+            totalPages: totalPages,
+            hasNextPage: hasNextPage,
+            onPageSelected: onPageSelected,
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  static Widget buildScrollableRankedSection({
+    required BuildContext context,
+    required List<AnimeModel> animeList,
+    required bool isLoading,
+    required int currentPage,
+    required int totalPages,
+    required int perPage,
+    required VoidCallback? onPrevPage,
+    required VoidCallback onNextPage,
+    required ValueChanged<int> onPageSelected,
+    bool? hasNextPage,
+  }) {
+    if (isLoading && animeList.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    if (animeList.isEmpty && !isLoading) {
+      return const Center(
+        child: Text(
+          'No data',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          RankedAnimeList(
+            animeList: animeList,
+            rankOffset: (currentPage - 1) * perPage,
+            onAnimeTap: (anime) => openDetail(context, anime),
+          ),
+          PaginationControls(
+            currentPage: currentPage,
+            onPrevPage: onPrevPage,
+            onNextPage: onNextPage,
+            totalPages: totalPages,
+            hasNextPage: hasNextPage,
+            onPageSelected: onPageSelected,
           ),
           const SizedBox(height: 20),
         ],
@@ -94,10 +155,7 @@ class HomeViews {
       itemCount: animeList.length,
       itemBuilder: (context, index) {
         final anime = animeList[index];
-        return AnimeGridCard(
-          anime: anime,
-          onTap: () => openDetail(context, anime),
-        );
+        return AnimeCard(anime: anime, onTap: () => openDetail(context, anime));
       },
     );
   }

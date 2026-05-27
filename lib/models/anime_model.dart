@@ -3,12 +3,22 @@ class AnimeModel {
   final String title;
   final String imageUrl;
   final double? score;
+  final String? type;
+  final int? episodes;
+  final int? year;
+  final int? members;
+  final int? rank;
 
   AnimeModel({
     required this.malId,
     required this.title,
     required this.imageUrl,
     this.score,
+    this.type,
+    this.episodes,
+    this.year,
+    this.members,
+    this.rank,
   });
 
   factory AnimeModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +27,11 @@ class AnimeModel {
       title: json['title'] ?? 'No Title',
       imageUrl: json['images']['jpg']['image_url'] ?? '',
       score: (json['score'] as num?)?.toDouble(),
+      type: json['type']?.toString(),
+      episodes: (json['episodes'] as num?)?.toInt(),
+      year: (json['year'] as num?)?.toInt(),
+      members: (json['members'] as num?)?.toInt(),
+      rank: (json['rank'] as num?)?.toInt(),
     );
   }
 }

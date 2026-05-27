@@ -3,6 +3,7 @@ import '../config/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
 import 'home/widgets/home_views.dart';
+import 'home/widgets/pagination_controls.dart';
 
 class CompletedAnimeScreen extends StatefulWidget {
   const CompletedAnimeScreen({super.key});
@@ -16,6 +17,8 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
   List<AnimeModel> animeList = [];
   bool isLoading = true;
   int currentPage = 1;
+  int totalPages = 1;
+  bool hasNextPage = false;
 
   @override
   void initState() {
@@ -29,10 +32,14 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
       setState(() {
         isLoading = true;
       });
-      final fetched = await _apiService.getCompletedAnime(page: currentPage);
+      final fetched = await _apiService.getCompletedAnimePaginated(
+        page: currentPage,
+      );
       if (mounted) {
         setState(() {
-          animeList = fetched;
+          animeList = fetched.anime;
+          totalPages = fetched.totalPages;
+          hasNextPage = fetched.hasNextPage;
           isLoading = false;
         });
       }
@@ -53,8 +60,19 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
   }
 
   void _nextPage() {
+    if (!hasNextPage && currentPage >= totalPages) return;
     setState(() {
       currentPage++;
+      animeList = [];
+    });
+    _loadCompletedAnime();
+  }
+
+  void _goToPage(int page) {
+    final targetPage = page < 1 ? 1 : (page > totalPages ? totalPages : page);
+    if (targetPage == currentPage) return;
+    setState(() {
+      currentPage = targetPage;
       animeList = [];
     });
     _loadCompletedAnime();
@@ -105,39 +123,13 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
                     context: context,
                     animeList: animeList,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 12,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (currentPage > 1)
-                          ElevatedButton.icon(
-                            onPressed: _prevPage,
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            label: const Text('Previous'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                            ),
-                          ),
-                        if (currentPage > 1) const SizedBox(width: 10),
-                        Text(
-                          'Page $currentPage',
-                          style: const TextStyle(color: AppColors.white),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: _nextPage,
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Next'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
+                  PaginationControls(
+                    currentPage: currentPage,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    onPrevPage: currentPage == 1 ? null : _prevPage,
+                    onNextPage: _nextPage,
+                    onPageSelected: _goToPage,
                   ),
                   const SizedBox(height: 20),
                 ],
