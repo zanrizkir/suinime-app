@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/skeleton_loaders.dart';
 import '../widgets/home_views.dart';
 
 class DashboardTab extends StatefulWidget {
@@ -209,9 +210,7 @@ class _DashboardTabState extends State<DashboardTab>
 
   Widget _buildHomeBody() {
     if (isLoading && animeList.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const AnimeGridSkeleton(count: 8, crossAxisCount: 2);
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(

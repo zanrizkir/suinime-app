@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
+import '../widgets/skeleton_loaders.dart';
 import 'home/widgets/home_views.dart';
 import 'home/widgets/pagination_controls.dart';
 
@@ -291,9 +292,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
         ),
       ),
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const GenreListSkeleton(groupCount: 5, itemsPerGroup: 4)
           : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,11 +324,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
                     if (isGenreAnimeLoading)
                       const Padding(
                         padding: EdgeInsets.all(40),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        child: AnimeGridSkeleton(count: 8, crossAxisCount: 2),
                       )
                     else if (genreAnimeList.isEmpty)
                       const Padding(

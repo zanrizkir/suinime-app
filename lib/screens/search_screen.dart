@@ -8,6 +8,7 @@ import '../services/search_history_notifier.dart';
 import '../utils/responsive.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/skeleton_loaders.dart';
 import 'detail_screen.dart';
 import 'home/widgets/anime_card.dart';
 import 'home/widgets/pagination_controls.dart';
@@ -124,9 +125,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Show loading state
     if (liveSearch.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const SearchResultSkeleton(count: 8);
     }
 
     // Show error state
@@ -408,10 +407,7 @@ class _SearchScreenState extends State<SearchScreen> {
       MaterialPageRoute(
         builder: (_) => DetailScreen(
           malId: item.animeId,
-          animeInfo: {
-            'title': item.title,
-            'imageUrl': item.imageUrl,
-          },
+          animeInfo: {'title': item.title, 'imageUrl': item.imageUrl},
         ),
       ),
     );

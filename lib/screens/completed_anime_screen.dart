@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../models/anime_model.dart';
+import '../widgets/skeleton_loaders.dart';
 import 'home/widgets/home_views.dart';
 import 'home/widgets/pagination_controls.dart';
 
@@ -106,9 +107,7 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
         ),
       ),
       body: isLoading && animeList.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const AnimeGridSkeleton(count: 8, crossAxisCount: 2)
           : animeList.isEmpty && !isLoading
           ? const Center(
               child: Text(

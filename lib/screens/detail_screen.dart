@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../config/theme/app_theme.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/skeleton_loaders.dart';
 import '../services/library_service.dart';
 import '../services/otakudesu_service.dart';
 import 'video_player_screen.dart';
@@ -289,9 +290,7 @@ class _DetailScreenState extends State<DetailScreen> {
           SafeArea(
             top: false,
             child: isDetailLoading && detailData.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  )
+                ? const DetailHeaderSkeleton()
                 : SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +327,18 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: AppColors.primary),
+                    ShimmerLoader(
+                      child: SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.darkSurface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 16),
                     Text(
                       'Menyambungkan ke server video...',
@@ -670,11 +680,9 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
           const SizedBox(height: 12),
           if (isEpisodeLoading && episodes.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: EpisodeListSkeleton(count: 5),
             )
           else if (episodeError != null && episodes.isEmpty)
             Center(

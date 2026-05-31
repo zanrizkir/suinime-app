@@ -24,6 +24,7 @@ dependencies:
   hive_flutter: ^1.1.0
   file_picker: ^11.0.2 # Kompatibel dengan Flutter 3.41.x dan Android embedding modern
   path_provider: ^2.1.0 # Untuk default storage paths
+  shimmer: ^3.0.0 # Untuk skeleton loading effect
 
 dev_dependencies:
   flutter_test:

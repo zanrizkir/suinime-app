@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/anime_model.dart';
 import '../../../config/theme/app_theme.dart';
 import '../../../utils/responsive.dart';
+import '../../../widgets/skeleton_loaders.dart';
 import 'anime_card.dart';
 import 'pagination_controls.dart';
 import 'ranked_anime_list.dart';
@@ -24,12 +25,7 @@ class HomeViews {
       children: [
         SectionHeader(title: title, onSeeAll: onSeeAll),
         if (isLoading && animeList.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-          )
+          const SectionSkeleton(title: '', itemCount: 4, crossAxisCount: 2)
         else if (animeList.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
@@ -61,9 +57,7 @@ class HomeViews {
     bool? hasNextPage,
   }) {
     if (isLoading && animeList.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const AnimeGridSkeleton(count: 8, crossAxisCount: 2);
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(
@@ -105,9 +99,7 @@ class HomeViews {
     bool? hasNextPage,
   }) {
     if (isLoading && animeList.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const RankedAnimeListSkeleton(count: 6);
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(
