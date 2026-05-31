@@ -107,7 +107,7 @@ class _CompletedAnimeScreenState extends State<CompletedAnimeScreen> {
         ),
       ),
       body: isLoading && animeList.isEmpty
-          ? const AnimeGridSkeleton(count: 8, crossAxisCount: 2)
+          ? const AnimeGridSkeleton(count: 8)
           : animeList.isEmpty && !isLoading
           ? const Center(
               child: Text(

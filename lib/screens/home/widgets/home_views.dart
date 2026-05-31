@@ -25,7 +25,7 @@ class HomeViews {
       children: [
         SectionHeader(title: title, onSeeAll: onSeeAll),
         if (isLoading && animeList.isEmpty)
-          const SectionSkeleton(title: '', itemCount: 4, crossAxisCount: 2)
+          const SectionSkeleton(title: '', itemCount: 4)
         else if (animeList.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
@@ -57,7 +57,7 @@ class HomeViews {
     bool? hasNextPage,
   }) {
     if (isLoading && animeList.isEmpty) {
-      return const AnimeGridSkeleton(count: 8, crossAxisCount: 2);
+      return const AnimeGridSkeleton(count: 8);
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(

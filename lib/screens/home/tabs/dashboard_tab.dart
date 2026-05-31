@@ -210,7 +210,7 @@ class _DashboardTabState extends State<DashboardTab>
 
   Widget _buildHomeBody() {
     if (isLoading && animeList.isEmpty) {
-      return const AnimeGridSkeleton(count: 8, crossAxisCount: 2);
+      return const AnimeGridSkeleton(count: 8);
     }
     if (animeList.isEmpty && !isLoading) {
       return const Center(

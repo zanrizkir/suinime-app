@@ -18,7 +18,7 @@ class ShimmerLoader extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: AppColors.darkSurface,
       highlightColor: AppColors.darkSurface.withValues(alpha: 0.6),
-      duration: duration,
+      period: duration,
       child: child,
     );
   }
@@ -72,24 +72,48 @@ class AnimeCardSkeleton extends StatelessWidget {
 /// Skeleton for anime grid - creates multiple cards
 class AnimeGridSkeleton extends StatelessWidget {
   final int count;
-  final int crossAxisCount;
 
-  const AnimeGridSkeleton({super.key, this.count = 8, this.crossAxisCount = 2});
+  const AnimeGridSkeleton({super.key, this.count = 8});
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.6,
-      ),
-      itemCount: count,
-      itemBuilder: (context, index) => const AnimeCardSkeleton(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        // Match Responsive.gridDelegateSmall configuration
+        late final int crossAxisCount;
+        late final double childAspectRatio;
+        late final double spacing;
+
+        if (width < 360) {
+          crossAxisCount = 2;
+          childAspectRatio = 0.6;
+          spacing = 8;
+        } else if (width < 600) {
+          crossAxisCount = 3;
+          childAspectRatio = 0.6;
+          spacing = 10;
+        } else {
+          crossAxisCount = 4;
+          childAspectRatio = 0.65;
+          spacing = 12;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: count,
+          itemBuilder: (context, index) => const AnimeCardSkeleton(),
+        );
+      },
     );
   }
 }
@@ -174,7 +198,7 @@ class RankedAnimeListSkeleton extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: count,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) => const RankedAnimeSkeletonItem(),
@@ -359,14 +383,8 @@ class GenericListSkeleton extends StatelessWidget {
 class SectionSkeleton extends StatelessWidget {
   final String title;
   final int itemCount;
-  final int crossAxisCount;
 
-  const SectionSkeleton({
-    super.key,
-    required this.title,
-    this.itemCount = 6,
-    this.crossAxisCount = 2,
-  });
+  const SectionSkeleton({super.key, required this.title, this.itemCount = 6});
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +404,7 @@ class SectionSkeleton extends StatelessWidget {
             ),
           ),
         ),
-        AnimeGridSkeleton(count: itemCount, crossAxisCount: crossAxisCount),
+        AnimeGridSkeleton(count: itemCount),
       ],
     );
   }
@@ -400,7 +418,7 @@ class SearchResultSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimeGridSkeleton(count: count, crossAxisCount: 2);
+    return AnimeGridSkeleton(count: count);
   }
 }
 

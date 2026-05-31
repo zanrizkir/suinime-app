@@ -75,7 +75,8 @@ class _SearchScreenState extends State<SearchScreen> {
     _keywordSaveTimer?.cancel();
     _searchFocusNode.dispose();
     _searchController.dispose();
-    context.read<LiveSearchNotifier>().clearSearch();
+    // Note: Don't call context.read() in dispose - widget is deactivated
+    // Provider will handle cleanup via its own lifecycle
     super.dispose();
   }
 

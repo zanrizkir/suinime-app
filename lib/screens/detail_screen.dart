@@ -323,7 +323,7 @@ class _DetailScreenState extends State<DetailScreen> {
           if (_isBridgingVideo)
             Container(
               color: AppColors.dark.withValues(alpha: 0.7),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -339,8 +339,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 16),
-                    Text(
+                    const SizedBox(height: 16),
+                    const Text(
                       'Menyambungkan ke server video...',
                       style: TextStyle(color: AppColors.textSecondary),
                     ),
