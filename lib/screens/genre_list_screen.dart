@@ -162,7 +162,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
     }
   }
 
-  /// Build grouped genre list with alphabetical sections
+  /// Build grouped genre list with alphabetical timeline sections
   Widget _buildGroupedGenreList() {
     final groupedGenres = _groupGenresByLetter(genres);
     final sortedKeys = groupedGenres.keys.toList();
@@ -177,92 +177,99 @@ class _GenreListScreenState extends State<GenreListScreen> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: sortedKeys.length,
       itemBuilder: (context, index) {
         final letter = sortedKeys[index];
         final genresInGroup = groupedGenres[letter]!;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-              child: Text(
-                letter,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-            // Genres grid for this letter
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const spacing = 8.0;
-                final columns = (constraints.maxWidth / 132)
-                    .floor()
-                    .clamp(2, 4)
-                    .toInt();
-
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: genresInGroup.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    mainAxisExtent: 40,
-                  ),
-                  itemBuilder: (context, genreIndex) {
-                    final genre = genresInGroup[genreIndex];
-                    final isSelected = selectedGenre?['id'] == genre['id'];
-
-                    return GestureDetector(
-                      onTap: () => _selectGenre(genre),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.darkSurface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.border.withValues(alpha: 0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          genre['name'],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isSelected
-                                ? AppColors.dark
-                                : AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Letter - prominent display on left
+                SizedBox(
+                  width: 50,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, right: 12),
+                    child: Text(
+                      letter,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
                       ),
-                    );
-                  },
-                );
-              },
+                    ),
+                  ),
+                ),
+                // Vertical divider - continuous line
+                Container(
+                  width: 2,
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
+                // Genre chips - wrapped responsive layout
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.start,
+                      children: List.generate(
+                        genresInGroup.length,
+                        (genreIndex) {
+                          final genre = genresInGroup[genreIndex];
+                          final isSelected =
+                              selectedGenre?['id'] == genre['id'];
+
+                          return GestureDetector(
+                            onTap: () => _selectGenre(genre),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.darkSurface,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.border
+                                          .withValues(alpha: 0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                genre['name'],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.dark
+                                      : AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
