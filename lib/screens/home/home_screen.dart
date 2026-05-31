@@ -22,14 +22,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String selectedFilter = 'Home';
+  static const Duration _tabAnimationDuration = Duration(milliseconds: 300);
+  static const Curve _tabAnimationCurve = Curves.easeOutCubic;
+
+  int _selectedIndex = 0;
   int currentPage = 1;
   bool isLoading = false;
   List<AnimeModel> animeList = [];
   String selectedDay = 'Senin';
   int totalPages = 1;
   bool hasNextPage = false;
-  bool _isNavigatingByPageController = false;
 
   final TextEditingController _searchEntryController = TextEditingController();
   final ApiService _apiService = ApiService();
@@ -38,31 +40,26 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
       label: 'Home',
-      filter: 'Home',
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
     ),
     _BottomNavItem(
       label: 'Jadwal',
-      filter: 'Jadwal Rilis',
       icon: Icons.calendar_month_outlined,
       activeIcon: Icons.calendar_month_rounded,
     ),
     _BottomNavItem(
       label: 'Pustaka',
-      filter: 'Pustaka',
       icon: Icons.video_library_outlined,
       activeIcon: Icons.video_library_rounded,
     ),
     _BottomNavItem(
       label: 'Riwayat',
-      filter: 'Riwayat',
       icon: Icons.history_outlined,
       activeIcon: Icons.history_rounded,
     ),
     _BottomNavItem(
       label: 'Lainnya',
-      filter: 'Lainnya',
       icon: Icons.menu_rounded,
       activeIcon: Icons.more_horiz_rounded,
     ),
@@ -81,42 +78,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-    _pageController.addListener(_onPageChanged);
-    _loadInitialData();
-  }
-
-  void _onPageChanged() {
-    final newIndex = _pageController.page?.round() ?? 0;
-    if (_isNavigatingByPageController) return;
-    if (newIndex >= 0 && newIndex < _bottomNavItems.length) {
-      final newFilter = _bottomNavItems[newIndex].filter;
-      if (selectedFilter != newFilter) {
-        _changeFilter(newFilter);
-      }
-    }
+    _pageController = PageController(initialPage: _selectedIndex);
   }
 
   @override
   void dispose() {
-    _pageController.removeListener(_onPageChanged);
     _pageController.dispose();
     _searchEntryController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadInitialData() async {
-    setState(() {
-      isLoading = true;
-    });
-
-    await _fetchData(updateLoading: false, showError: false);
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (!mounted) return;
-    setState(() {
-      isLoading = false;
-    });
   }
 
   Future<void> _fetchData({
@@ -131,47 +100,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final requestedPage = currentPage;
-      PaginatedAnimeResponse? paginated;
+      final dayApi = _days.firstWhere(
+        (d) => d['label'] == selectedDay,
+        orElse: () => {'label': 'Senin', 'api': 'monday'},
+      )['api']!;
+      final PaginatedAnimeResponse paginated = await _apiService
+          .fetchSchedulePaginated(dayApi: dayApi, page: requestedPage);
 
-      if (selectedFilter == 'Home') {
-        paginated = await _apiService.fetchTopAnimePaginated(
-          page: requestedPage,
-        );
-      } else if (selectedFilter == 'Jadwal Rilis') {
-        final dayApi = _days.firstWhere(
-          (d) => d['label'] == selectedDay,
-          orElse: () => {'label': 'Senin', 'api': 'monday'},
-        )['api']!;
-        paginated = await _apiService.fetchSchedulePaginated(
-          dayApi: dayApi,
-          page: requestedPage,
-        );
-      } else if (selectedFilter == 'Pustaka' ||
-          selectedFilter == 'Riwayat' ||
-          selectedFilter == 'Lainnya') {
-        if (updateLoading) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-        return;
-      }
-
-      final safePaginated = paginated;
-      if (safePaginated == null) {
-        if (mounted && updateLoading) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-        return;
-      }
-
-      final fetched = ApiService.deduplicateAnimeList(safePaginated.anime);
+      final fetched = ApiService.deduplicateAnimeList(paginated.anime);
       if (mounted) {
         setState(() {
-          totalPages = safePaginated.totalPages;
-          hasNextPage = safePaginated.hasNextPage;
+          totalPages = paginated.totalPages;
+          hasNextPage = paginated.hasNextPage;
         });
       }
 
@@ -196,33 +136,32 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _changeFilter(String filter) {
-    if (selectedFilter == filter) return;
+  void _selectTab(int index) {
+    if (index < 0 || index >= _bottomNavItems.length) return;
 
-    final newIndex = _bottomNavItems.indexWhere(
-      (item) => item.filter == filter,
+    _setSelectedIndex(index);
+    _pageController.animateToPage(
+      index,
+      duration: _tabAnimationDuration,
+      curve: _tabAnimationCurve,
     );
-    if (newIndex != -1) {
-      _isNavigatingByPageController = true;
-      _pageController
-          .animateToPage(
-            newIndex,
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-          )
-          .then((_) {
-            _isNavigatingByPageController = false;
-          });
+  }
+
+  void _handlePageChanged(int index) {
+    if (index < 0 || index >= _bottomNavItems.length) return;
+    _setSelectedIndex(index);
+  }
+
+  void _setSelectedIndex(int index) {
+    if (_selectedIndex != index) {
+      setState(() {
+        _selectedIndex = index;
+      });
     }
 
-    setState(() {
-      selectedFilter = filter;
-      currentPage = 1;
-      totalPages = 1;
-      hasNextPage = false;
-      animeList = [];
-    });
-    _fetchData();
+    if (index == 1 && animeList.isEmpty && !isLoading) {
+      _fetchData();
+    }
   }
 
   void _changeDay(String day) {
@@ -266,16 +205,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _returnToHomeTab() {
-    if (selectedFilter == 'Home') return;
+    if (_selectedIndex == 0) return;
     setState(() {
-      selectedFilter = 'Home';
+      _selectedIndex = 0;
     });
+    _pageController.animateToPage(
+      0,
+      duration: _tabAnimationDuration,
+      curve: _tabAnimationCurve,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: selectedFilter == 'Home',
+      canPop: _selectedIndex == 0,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         _returnToHomeTab();
@@ -389,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return Expanded(
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
-                onTap: () => _changeFilter(item.filter),
+                onTap: () => _selectTab(index),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
@@ -439,27 +383,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   int get _activeBottomNavIndex {
-    final index = _bottomNavItems.indexWhere(
-      (item) => item.filter == selectedFilter,
-    );
-    return index == -1 ? 0 : index;
+    return _selectedIndex;
   }
 
   Widget _buildBody() {
     return PageView(
       controller: _pageController,
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      onPageChanged: (index) {
-        if (_isNavigatingByPageController) return;
-        if (index >= 0 && index < _bottomNavItems.length) {
-          final newFilter = _bottomNavItems[index].filter;
-          if (selectedFilter != newFilter) {
-            _changeFilter(newFilter);
-          }
-        }
-      },
+      physics: const PageScrollPhysics(),
+      onPageChanged: _handlePageChanged,
       children: [
         _buildHomeBody(),
         _buildJadwalBody(),
@@ -564,13 +495,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _BottomNavItem {
   final String label;
-  final String filter;
   final IconData icon;
   final IconData activeIcon;
 
   const _BottomNavItem({
     required this.label,
-    required this.filter,
     required this.icon,
     required this.activeIcon,
   });
