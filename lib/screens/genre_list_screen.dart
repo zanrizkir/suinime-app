@@ -218,52 +218,49 @@ class _GenreListScreenState extends State<GenreListScreen> {
                       spacing: 10,
                       runSpacing: 10,
                       alignment: WrapAlignment.start,
-                      children: List.generate(
-                        genresInGroup.length,
-                        (genreIndex) {
-                          final genre = genresInGroup[genreIndex];
-                          final isSelected =
-                              selectedGenre?['id'] == genre['id'];
+                      children: List.generate(genresInGroup.length, (
+                        genreIndex,
+                      ) {
+                        final genre = genresInGroup[genreIndex];
+                        final isSelected = selectedGenre?['id'] == genre['id'];
 
-                          return GestureDetector(
-                            onTap: () => _selectGenre(genre),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
+                        return GestureDetector(
+                          onTap: () => _selectGenre(genre),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.darkSurface,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
                                 color: isSelected
                                     ? AppColors.primary
-                                    : AppColors.darkSurface,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.border
-                                          .withValues(alpha: 0.4),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text(
-                                genre['name'],
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? AppColors.dark
-                                      : AppColors.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                ),
+                                    : AppColors.border.withValues(alpha: 0.4),
+                                width: 1,
                               ),
                             ),
-                          );
-                        },
-                      ),
+                            child: Text(
+                              genre['name'],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.dark
+                                    : AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ),

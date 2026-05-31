@@ -29,9 +29,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedDay = 'Senin';
   int totalPages = 1;
   bool hasNextPage = false;
+  bool _isNavigatingByPageController = false;
 
   final TextEditingController _searchEntryController = TextEditingController();
   final ApiService _apiService = ApiService();
+  late PageController _pageController;
 
   final List<_BottomNavItem> _bottomNavItems = const [
     _BottomNavItem(
@@ -79,11 +81,26 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
+    _pageController.addListener(_onPageChanged);
     _loadInitialData();
+  }
+
+  void _onPageChanged() {
+    final newIndex = _pageController.page?.round() ?? 0;
+    if (_isNavigatingByPageController) return;
+    if (newIndex >= 0 && newIndex < _bottomNavItems.length) {
+      final newFilter = _bottomNavItems[newIndex].filter;
+      if (selectedFilter != newFilter) {
+        _changeFilter(newFilter);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _pageController.removeListener(_onPageChanged);
+    _pageController.dispose();
     _searchEntryController.dispose();
     super.dispose();
   }
@@ -181,6 +198,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _changeFilter(String filter) {
     if (selectedFilter == filter) return;
+    
+    final newIndex = _bottomNavItems.indexWhere(
+      (item) => item.filter == filter,
+    );
+    if (newIndex != -1) {
+      _isNavigatingByPageController = true;
+      _pageController.animateToPage(
+        newIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      ).then((_) {
+        _isNavigatingByPageController = false;
+      });
+    }
+    
     setState(() {
       selectedFilter = filter;
       currentPage = 1;
@@ -412,8 +444,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
-    return IndexedStack(
-      index: _activeBottomNavIndex,
+    return PageView(
+      controller: _pageController,
+      onPageChanged: (index) {
+        if (_isNavigatingByPageController) return;
+        if (index >= 0 && index < _bottomNavItems.length) {
+          final newFilter = _bottomNavItems[index].filter;
+          if (selectedFilter != newFilter) {
+            _changeFilter(newFilter);
+          }
+        }
+      },
       children: [
         _buildHomeBody(),
         _buildJadwalBody(),
