@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../config/theme/app_theme.dart';
+import '../utils/responsive.dart';
 
 /// Base shimmer wrapper for all skeleton loaders
 class ShimmerLoader extends StatelessWidget {
@@ -30,41 +31,82 @@ class AnimeCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShimmerLoader(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Poster placeholder
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final padding = Responsive.paddingSmall(context);
+        final titleHeight = Responsive.fontSizeSmall(context);
+        final infoHeight = Responsive.fontSizeXSmall(context);
+        final titleWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth * 0.78
+            : double.infinity;
+        final infoWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth * 0.42
+            : 48.0;
+
+        return ShimmerLoader(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(color: AppColors.darkSurface),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.dark.withValues(alpha: 0),
+                        AppColors.dark.withValues(alpha: 0.8),
+                      ],
+                      stops: const [0.3, 1.0],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: padding,
+                  right: padding,
+                  bottom: padding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FractionallySizedBox(
+                        widthFactor: 0.92,
+                        child: Container(
+                          height: titleHeight,
+                          decoration: BoxDecoration(
+                            color: AppColors.darkSurface,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacingSmall(context)),
+                      Container(
+                        width: titleWidth,
+                        height: titleHeight,
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      SizedBox(height: Responsive.spacingXSmall(context)),
+                      Container(
+                        width: infoWidth,
+                        height: infoHeight,
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurface,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          // Title placeholder
-          Container(
-            width: double.infinity,
-            height: 14,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Subtitle placeholder
-          Container(
-            width: 120,
-            height: 12,
-            decoration: BoxDecoration(
-              color: AppColors.darkSurface,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -79,39 +121,18 @@ class AnimeGridSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        // Match Responsive.gridDelegateSmall configuration
-        late final int crossAxisCount;
-        late final double childAspectRatio;
-        late final double spacing;
-
-        if (width < 360) {
-          crossAxisCount = 2;
-          childAspectRatio = 0.6;
-          spacing = 8;
-        } else if (width < 600) {
-          crossAxisCount = 3;
-          childAspectRatio = 0.6;
-          spacing = 10;
-        } else {
-          crossAxisCount = 4;
-          childAspectRatio = 0.65;
-          spacing = 12;
-        }
-
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-            childAspectRatio: childAspectRatio,
-          ),
+          padding: Responsive.animeGridPadding(context),
+          gridDelegate: Responsive.gridDelegateSmall(context),
           itemCount: count,
-          itemBuilder: (context, index) => const AnimeCardSkeleton(),
+          itemBuilder: (context, index) {
+            return const AspectRatio(
+              aspectRatio: 0.6,
+              child: AnimeCardSkeleton(),
+            );
+          },
         );
       },
     );
@@ -391,19 +412,23 @@ class SectionSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: ShimmerLoader(
-            child: Container(
-              width: 150,
-              height: 18,
-              decoration: BoxDecoration(
-                color: AppColors.darkSurface,
-                borderRadius: BorderRadius.circular(6),
+        if (title.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: Responsive.paddingMedium(context),
+              vertical: Responsive.spacingMedium(context),
+            ),
+            child: ShimmerLoader(
+              child: Container(
+                width: 150,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: AppColors.darkSurface,
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
             ),
           ),
-        ),
         AnimeGridSkeleton(count: itemCount),
       ],
     );

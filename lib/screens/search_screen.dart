@@ -359,7 +359,7 @@ class _SearchScreenState extends State<SearchScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.all(Responsive.paddingMedium(context)),
+            padding: Responsive.animeGridPadding(context),
             gridDelegate: Responsive.gridDelegateSmall(context),
             itemCount: results.length,
             itemBuilder: (context, index) {

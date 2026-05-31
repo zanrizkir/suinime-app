@@ -139,10 +139,7 @@ class HomeViews {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.symmetric(
-        horizontal: Responsive.paddingMedium(context),
-        vertical: Responsive.spacingMedium(context),
-      ),
+      padding: Responsive.animeGridPadding(context),
       gridDelegate: Responsive.gridDelegateSmall(context),
       itemCount: animeList.length,
       itemBuilder: (context, index) {

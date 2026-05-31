@@ -322,10 +322,7 @@ class _GenreListScreenState extends State<GenreListScreen> {
                       ),
                     ),
                     if (isGenreAnimeLoading)
-                      const Padding(
-                        padding: EdgeInsets.all(40),
-                        child: AnimeGridSkeleton(count: 8),
-                      )
+                      const AnimeGridSkeleton(count: 8)
                     else if (genreAnimeList.isEmpty)
                       const Padding(
                         padding: EdgeInsets.all(24),

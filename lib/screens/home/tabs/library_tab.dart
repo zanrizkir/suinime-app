@@ -238,7 +238,7 @@ class _LibraryTabState extends State<LibraryTab>
 
   Widget _buildAnimeGrid(List<LibraryItem> items) {
     return GridView.builder(
-      padding: EdgeInsets.all(Responsive.paddingMedium(context)),
+      padding: Responsive.animeGridPadding(context),
       gridDelegate: Responsive.gridDelegateSmall(context),
       itemCount: items.length,
       itemBuilder: (context, index) {

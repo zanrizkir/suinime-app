@@ -140,6 +140,13 @@ class Responsive {
       isMobile(context) ? 32 : 48;
 
   /// Adaptive grid configurations - optimized for anime cards
+  static EdgeInsets animeGridPadding(BuildContext context) {
+    return EdgeInsets.symmetric(
+      horizontal: paddingMedium(context),
+      vertical: spacingMedium(context),
+    );
+  }
+
   static SliverGridDelegate gridDelegateSmall(BuildContext context) {
     final width = screenWidth(context);
 
