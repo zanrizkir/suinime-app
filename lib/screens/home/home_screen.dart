@@ -198,21 +198,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _changeFilter(String filter) {
     if (selectedFilter == filter) return;
-    
+
     final newIndex = _bottomNavItems.indexWhere(
       (item) => item.filter == filter,
     );
     if (newIndex != -1) {
       _isNavigatingByPageController = true;
-      _pageController.animateToPage(
-        newIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      ).then((_) {
-        _isNavigatingByPageController = false;
-      });
+      _pageController
+          .animateToPage(
+            newIndex,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+          )
+          .then((_) {
+            _isNavigatingByPageController = false;
+          });
     }
-    
+
     setState(() {
       selectedFilter = filter;
       currentPage = 1;
@@ -446,6 +448,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody() {
     return PageView(
       controller: _pageController,
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       onPageChanged: (index) {
         if (_isNavigatingByPageController) return;
         if (index >= 0 && index < _bottomNavItems.length) {

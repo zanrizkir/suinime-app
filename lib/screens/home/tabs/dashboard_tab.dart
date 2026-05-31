@@ -20,7 +20,8 @@ class DashboardTab extends StatefulWidget {
   State<DashboardTab> createState() => _DashboardTabState();
 }
 
-class _DashboardTabState extends State<DashboardTab> {
+class _DashboardTabState extends State<DashboardTab>
+    with AutomaticKeepAliveClientMixin {
   int currentPage = 1;
   bool isLoading = false;
   bool isLatestLoading = false;
@@ -32,6 +33,9 @@ class _DashboardTabState extends State<DashboardTab> {
   bool hasNextPage = false;
 
   final ApiService _apiService = ApiService();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -190,6 +194,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (widget.filter == 'Home') {
       return _buildHomeBody();
     } else if (widget.filter == 'Top Anime') {

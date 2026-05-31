@@ -12,9 +12,13 @@ class MoreTab extends StatefulWidget {
   State<MoreTab> createState() => _MoreTabState();
 }
 
-class _MoreTabState extends State<MoreTab> {
+class _MoreTabState extends State<MoreTab> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return _buildMoreBody();
   }
 
