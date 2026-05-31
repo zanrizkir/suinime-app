@@ -22,6 +22,8 @@ class RankedAnimeList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final orderedAnimeList = _orderedByRankWhenAvailable(animeList);
+
     return ListView.separated(
       shrinkWrap: shrinkWrap,
       physics: physics,
@@ -29,12 +31,12 @@ class RankedAnimeList extends StatelessWidget {
         horizontal: Responsive.paddingMedium(context),
         vertical: Responsive.spacingMedium(context),
       ),
-      itemCount: animeList.length,
+      itemCount: orderedAnimeList.length,
       separatorBuilder: (context, index) =>
           SizedBox(height: Responsive.spacingSmall(context)),
       itemBuilder: (context, index) {
-        final anime = animeList[index];
-        final rank = anime.rank ?? rankOffset + index + 1;
+        final anime = orderedAnimeList[index];
+        final rank = rankOffset + index + 1;
         return _RankedAnimeTile(
           anime: anime,
           rank: rank,
@@ -42,6 +44,22 @@ class RankedAnimeList extends StatelessWidget {
         );
       },
     );
+  }
+
+  List<AnimeModel> _orderedByRankWhenAvailable(List<AnimeModel> animeList) {
+    final rankedItems = animeList.where((anime) => anime.rank != null).length;
+    if (rankedItems < 2) return animeList;
+
+    final ordered = List<AnimeModel>.of(animeList);
+    ordered.sort((a, b) {
+      final rankA = a.rank;
+      final rankB = b.rank;
+      if (rankA == null && rankB == null) return 0;
+      if (rankA == null) return 1;
+      if (rankB == null) return -1;
+      return rankA.compareTo(rankB);
+    });
+    return ordered;
   }
 }
 
@@ -61,7 +79,9 @@ class _RankedAnimeTile extends StatelessWidget {
     final isMobile = Responsive.isMobile(context);
     final posterWidth = isMobile ? 58.0 : 72.0;
     final posterHeight = isMobile ? 82.0 : 100.0;
-    final rankWidth = isMobile ? 42.0 : 54.0;
+    final rankText = '#$rank';
+    final rankWidth = _rankWidth(context, rankText.length);
+    final rankFontSize = _rankFontSize(isMobile, rankText.length);
 
     return Material(
       color: AppColors.darkSurface,
@@ -80,14 +100,18 @@ class _RankedAnimeTile extends StatelessWidget {
             children: [
               SizedBox(
                 width: rankWidth,
-                child: Text(
-                  '#$rank',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: isMobile ? 18 : 22,
-                    fontWeight: FontWeight.w800,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    rankText,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: rankFontSize,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
@@ -155,6 +179,22 @@ class _RankedAnimeTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _rankWidth(BuildContext context, int textLength) {
+    final isMobile = Responsive.isMobile(context);
+    final baseWidth = isMobile ? 42.0 : 54.0;
+    final extraWidth = (textLength - 3).clamp(0, 8) * (isMobile ? 7.0 : 9.0);
+    final maxWidth =
+        MediaQuery.sizeOf(context).width * (isMobile ? 0.24 : 0.18);
+    return (baseWidth + extraWidth).clamp(baseWidth, maxWidth);
+  }
+
+  double _rankFontSize(bool isMobile, int textLength) {
+    if (textLength <= 3) return isMobile ? 18 : 22;
+    if (textLength == 4) return isMobile ? 16 : 20;
+    if (textLength <= 6) return isMobile ? 14 : 18;
+    return isMobile ? 12 : 16;
   }
 
   String _formatMembers(int members) {
